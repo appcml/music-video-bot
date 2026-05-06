@@ -364,7 +364,8 @@ function detectG(){
 function sp(el,g){
   el.closest('.pr').querySelectorAll('.pill').forEach(p=>p.classList.remove('s'));
   el.classList.add('s');
-  const val=el.textContent.replace(/[🌑☀️⚡🌿📷🎨]/u,'').trim();
+  // Limpiar emojis y espacios del valor
+  const val=el.textContent.replace(/[\u{1F300}-\u{1FFFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[🌑☀️⚡🌿📷🎨]/gu,'').trim();
   if(g==='pal')S.pal=val; if(g==='tr')S.tr=val; if(g==='tx')S.tx=val;
   if(g==='ef')S.ef=val;   if(g==='du')S.du=val;
 }
@@ -396,13 +397,19 @@ async function disparar(){
   const btn=document.getElementById('bgen');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
 
+  // Limpiar emojis de todos los valores de estado
+  const limpiar=s=>s.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]/gu,'').trim();
+
   const payload={inputs:{
     song_name:song, artist:artist,
     song_desc:v('sd'), video_desc:v('vd')||'',
     genres:getG().join(',')||'Pop',
-    palette:S.pal, transition:S.tr, text_style:S.tx,
-    effect:S.ef, rhythm:String(document.getElementById('rh').value),
-    duration:S.du+' (Reel estándar)',
+    palette:limpiar(S.pal)||'Oscuro',
+    transition:limpiar(S.tr)||'Ken Burns',
+    text_style:limpiar(S.tx)||'Nombre + artista',
+    effect:limpiar(S.ef)||'Sin filtro',
+    rhythm:String(document.getElementById('rh').value),
+    duration:limpiar(S.du)+' (Reel estándar)',
     yt_ref:S.ytName||'auto',
     spotify_link:v('sp')||'',
     audio_name:S.audioName||'',
