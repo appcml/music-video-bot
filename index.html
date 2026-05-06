@@ -3,919 +3,561 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Music Video Bot — Generador de Videos</title>
+<title>Music Video Bot</title>
 <style>
-  :root {
-    --purple: #7F77DD;
-    --purple-light: #EEEDFE;
-    --purple-dark: #3C3489;
-    --teal: #1D9E75;
-    --teal-light: #E1F5EE;
-    --gray-border: #e2e0d8;
-    --gray-bg: #f8f7f4;
-    --text: #1a1a1a;
-    --text-muted: #666460;
-    --text-hint: #999794;
-    --success: #1D9E75;
-    --success-bg: #E1F5EE;
-    --radius: 10px;
-    --radius-lg: 14px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--gray-bg);
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 32px 16px;
-    color: var(--text);
-  }
-  .container {
-    width: 100%;
-    max-width: 560px;
-  }
-  .header {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  .header-icon {
-    width: 52px;
-    height: 52px;
-    background: var(--purple-light);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 12px;
-    font-size: 24px;
-  }
-  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-  .subtitle { font-size: 14px; color: var(--text-muted); }
-
-  /* Memoria del último proyecto */
-  .memory-card {
-    background: white;
-    border: 1.5px solid var(--purple);
-    border-radius: var(--radius-lg);
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    display: none;
-  }
-  .memory-card.visible { display: block; }
-  .memory-title { font-size: 12px; color: var(--purple-dark); font-weight: 600; margin-bottom: 4px; }
-  .memory-song { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
-  .memory-actions { display: flex; gap: 8px; }
-  .btn-memory {
-    flex: 1;
-    padding: 7px;
-    border-radius: 8px;
-    border: 1px solid var(--gray-border);
-    background: white;
-    font-size: 13px;
-    cursor: pointer;
-    color: var(--text);
-    transition: all .15s;
-  }
-  .btn-memory:hover { background: var(--gray-bg); }
-  .btn-memory.primary { background: var(--purple); color: white; border-color: var(--purple); }
-  .btn-memory.primary:hover { background: var(--purple-dark); }
-
-  /* Card principal */
-  .card {
-    background: white;
-    border: 0.5px solid var(--gray-border);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  }
-
-  /* Steps indicator */
-  .steps-nav {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 24px;
-  }
-  .step-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
-  }
-  .step-item:last-child { flex: 0; }
-  .step-circle {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 1.5px solid var(--gray-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-hint);
-    flex-shrink: 0;
-    transition: all .2s;
-  }
-  .step-circle.active { border-color: var(--purple); background: var(--purple); color: white; }
-  .step-circle.done { border-color: var(--teal); background: var(--teal); color: white; }
-  .step-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
-  .step-label.active { color: var(--purple-dark); font-weight: 500; }
-  .step-line { flex: 1; height: 1px; background: var(--gray-border); margin: 0 8px; transition: background .2s; }
-  .step-line.done { background: var(--teal); }
-
-  /* Panel de pasos */
-  .step-panel { display: none; }
-  .step-panel.active { display: block; }
-
-  /* Form elements */
-  label.field-label {
-    display: block;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 5px;
-    font-weight: 500;
-  }
-  .field-group { margin-bottom: 14px; }
-  input[type=text], input[type=url], textarea, select {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid var(--gray-border);
-    border-radius: var(--radius);
-    font-size: 14px;
-    color: var(--text);
-    background: white;
-    transition: border-color .15s;
-    font-family: inherit;
-  }
-  input:focus, textarea:focus, select:focus {
-    outline: none;
-    border-color: var(--purple);
-  }
-  textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  /* Upload boxes */
-  .upload-area {
-    border: 1.5px dashed var(--gray-border);
-    border-radius: var(--radius);
-    padding: 18px 12px;
-    text-align: center;
-    cursor: pointer;
-    transition: all .15s;
-    position: relative;
-  }
-  .upload-area:hover { border-color: var(--purple); background: var(--purple-light); }
-  .upload-area.uploaded { border-color: var(--success); background: var(--success-bg); border-style: solid; }
-  .upload-area input[type=file] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  .upload-icon { font-size: 22px; margin-bottom: 4px; }
-  .upload-label { font-size: 13px; color: var(--text-muted); }
-  .upload-area.uploaded .upload-label { color: var(--success); font-weight: 500; }
-
-  /* Genre tags */
-  .genre-row { display: flex; flex-wrap: wrap; gap: 6px; }
-  .genre-tag {
-    padding: 5px 12px;
-    border-radius: 14px;
-    border: 1px solid var(--gray-border);
-    font-size: 12px;
-    cursor: pointer;
-    color: var(--text-muted);
-    background: white;
-    transition: all .15s;
-    user-select: none;
-  }
-  .genre-tag:hover { border-color: var(--purple); color: var(--purple-dark); }
-  .genre-tag.sel { background: var(--purple); border-color: var(--purple); color: white; }
-  .genre-tag.auto { background: var(--teal-light); border-color: var(--teal); color: #085041; }
-
-  /* Pills */
-  .pills-row { display: flex; flex-wrap: wrap; gap: 6px; }
-  .pill {
-    padding: 6px 14px;
-    border-radius: 16px;
-    border: 1px solid var(--gray-border);
-    font-size: 13px;
-    cursor: pointer;
-    color: var(--text-muted);
-    background: white;
-    transition: all .15s;
-    user-select: none;
-  }
-  .pill:hover { border-color: var(--purple); }
-  .pill.sel { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
-
-  /* Rhythm slider */
-  .rhythm-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .rhythm-row input[type=range] {
-    flex: 1;
-    padding: 0;
-    border: none;
-    background: transparent;
-  }
-  .rhythm-val {
-    min-width: 20px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--purple-dark);
-  }
-
-  /* YouTube reference cards */
-  .yt-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border: 1px solid var(--gray-border);
-    border-radius: var(--radius);
-    cursor: pointer;
-    margin-bottom: 8px;
-    transition: all .15s;
-    background: white;
-  }
-  .yt-card:hover { border-color: var(--purple); background: var(--purple-light); }
-  .yt-card.sel { border-color: var(--purple); background: var(--purple-light); border-width: 1.5px; }
-  .yt-thumb {
-    width: 76px;
-    height: 44px;
-    background: var(--gray-bg);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 20px;
-    color: var(--text-hint);
-    overflow: hidden;
-  }
-  .yt-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .yt-info { flex: 1; min-width: 0; }
-  .yt-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
-  .yt-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
-  .yt-link { font-size: 11px; color: #185FA5; text-decoration: none; }
-  .yt-link:hover { text-decoration: underline; }
-
-  /* Section title */
-  .section-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .section-sub {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 18px;
-    line-height: 1.5;
-  }
-
-  /* Buttons */
-  .btn-row { display: flex; gap: 8px; margin-top: 20px; }
-  .btn {
-    padding: 10px 18px;
-    border-radius: var(--radius);
-    border: 1px solid var(--gray-border);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    background: white;
-    color: var(--text);
-    transition: all .15s;
-    font-family: inherit;
-  }
-  .btn:hover { background: var(--gray-bg); }
-  .btn.primary {
-    background: var(--purple);
-    color: white;
-    border-color: var(--purple);
-    flex: 2;
-  }
-  .btn.primary:hover { background: var(--purple-dark); }
-  .btn.secondary { flex: 1; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  /* Success screen */
-  .success-screen {
-    text-align: center;
-    padding: 12px 0;
-  }
-  .success-icon {
-    width: 56px;
-    height: 56px;
-    background: var(--success-bg);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 16px;
-    font-size: 26px;
-  }
-  .success-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
-  .success-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
-  .progress-steps { text-align: left; margin-bottom: 20px; }
-  .progress-step {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--gray-border);
-    font-size: 13px;
-  }
-  .progress-step:last-child { border-bottom: none; }
-  .ps-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--gray-border);
-    flex-shrink: 0;
-  }
-  .ps-dot.done { background: var(--success); }
-  .ps-dot.active { background: var(--purple); }
-
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 500; margin-left: 6px; }
-  .badge-success { background: var(--success-bg); color: #085041; }
-  .badge-purple { background: var(--purple-light); color: var(--purple-dark); }
-
-  /* Divider */
-  .divider { height: 1px; background: var(--gray-border); margin: 16px 0; }
+:root{--pu:#7F77DD;--pul:#EEEDFE;--pud:#3C3489;--te:#1D9E75;--tel:#E1F5EE;--bd:#e2e0d8;--bg:#f8f7f4;--tx:#1a1a1a;--mu:#666460;--hi:#999794;--r:10px;--rl:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;color:var(--tx)}
+.w{width:100%;max-width:560px}
+.hdr{text-align:center;margin-bottom:22px}
+.hico{width:48px;height:48px;background:var(--pul);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:22px}
+.hdr h1{font-size:20px;font-weight:600;margin-bottom:3px}
+.hdr p{font-size:13px;color:var(--mu)}
+/* Memory */
+.mem{background:#fff;border:1.5px solid var(--pu);border-radius:var(--rl);padding:13px 15px;margin-bottom:16px;display:none}
+.mem.on{display:block}
+.mtag{font-size:11px;font-weight:600;color:var(--pud);margin-bottom:3px}
+.msong{font-size:14px;font-weight:500;margin-bottom:2px}
+.mdate{font-size:12px;color:var(--mu);margin-bottom:9px}
+.mrow{display:flex;gap:7px}
+/* Card */
+.card{background:#fff;border:0.5px solid var(--bd);border-radius:var(--rl);padding:22px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+/* Steps */
+.sn{display:flex;align-items:center;margin-bottom:20px}
+.si{display:flex;align-items:center;gap:5px;flex:1}
+.si:last-child{flex:0}
+.sc{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--hi);flex-shrink:0;transition:all .2s}
+.sc.a{border-color:var(--pu);background:var(--pu);color:#fff}
+.sc.d{border-color:var(--te);background:var(--te);color:#fff}
+.sl{font-size:12px;color:var(--mu);white-space:nowrap}
+.sl.a{color:var(--pud);font-weight:500}
+.sli{flex:1;height:1px;background:var(--bd);margin:0 6px;transition:background .2s}
+.sli.d{background:var(--te)}
+/* Panels */
+.pan{display:none}.pan.on{display:block}
+/* Edit banner */
+.ebanner{background:var(--pul);border:1px solid var(--pu);border-radius:var(--r);padding:9px 13px;margin-bottom:14px;font-size:13px;color:var(--pud);display:none}
+.ebanner.on{display:block}
+/* Form */
+.fl{display:block;font-size:12px;color:var(--mu);margin-bottom:4px;font-weight:500}
+.fg{margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+input[type=text],input[type=url],input[type=password],textarea,select{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radius:var(--r);font-size:14px;color:var(--tx);background:#fff;transition:border-color .15s;font-family:inherit}
+input:focus,textarea:focus{outline:none;border-color:var(--pu)}
+textarea{resize:vertical;min-height:66px;line-height:1.5}
+/* Upload */
+.up{border:1.5px dashed var(--bd);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.up:hover{border-color:var(--pu);background:var(--pul)}
+.up.ok{border-color:var(--te);background:var(--tel);border-style:solid}
+.up input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uico{font-size:20px;margin-bottom:3px}
+.ulbl{font-size:12px;color:var(--mu)}
+.up.ok .ulbl{color:var(--te);font-weight:500}
+/* Genres */
+.gtr{display:flex;flex-wrap:wrap;gap:5px}
+.gt{padding:4px 10px;border-radius:12px;border:1px solid var(--bd);font-size:12px;cursor:pointer;color:var(--mu);background:#fff;transition:all .15s;user-select:none}
+.gt.s{background:var(--pu);border-color:var(--pu);color:#fff}
+.gt.au{background:var(--tel);border-color:var(--te);color:#085041}
+/* Pills */
+.pr{display:flex;flex-wrap:wrap;gap:5px}
+.pill{padding:5px 12px;border-radius:13px;border:1px solid var(--bd);font-size:12px;cursor:pointer;color:var(--mu);background:#fff;transition:all .15s;user-select:none}
+.pill:hover{border-color:var(--pu)}
+.pill.s{background:var(--pul);border-color:var(--pu);color:var(--pud);font-weight:500}
+/* Rhythm */
+.rr{display:flex;align-items:center;gap:9px}
+.rr input{flex:1;padding:0;border:none;background:transparent}
+.rv{min-width:16px;text-align:center;font-size:13px;font-weight:500;color:var(--pud)}
+/* YT cards */
+.ytc{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;margin-bottom:6px;transition:all .15s;background:#fff}
+.ytc:hover{border-color:var(--pu);background:var(--pul)}
+.ytc.s{border-color:var(--pu);background:var(--pul);border-width:1.5px}
+.yt-th{width:68px;height:40px;background:var(--bg);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;color:var(--hi)}
+.yt-t{font-size:13px;font-weight:500;margin-bottom:1px}
+.yt-d{font-size:12px;color:var(--mu);margin-bottom:2px}
+.yt-a{font-size:11px;color:#185FA5;text-decoration:none}
+.yt-a:hover{text-decoration:underline}
+/* Section */
+.st{font-size:15px;font-weight:600;margin-bottom:3px}
+.ss{font-size:13px;color:var(--mu);margin-bottom:15px;line-height:1.5}
+/* Buttons */
+.br{display:flex;gap:7px;margin-top:16px}
+.btn{padding:9px 15px;border-radius:var(--r);border:1px solid var(--bd);font-size:14px;font-weight:500;cursor:pointer;background:#fff;color:var(--tx);transition:all .15s;font-family:inherit}
+.btn:hover{background:var(--bg)}
+.btn.p{background:var(--pu);color:#fff;border-color:var(--pu);flex:2}
+.btn.p:hover{background:var(--pud)}
+.btn.sec{flex:1}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* ── PROGRESS ── */
+.psong{font-size:15px;font-weight:600;margin-bottom:3px;text-align:center}
+.partist{font-size:13px;color:var(--mu);margin-bottom:18px;text-align:center}
+.pbar-w{background:var(--bg);border-radius:20px;height:8px;overflow:hidden;margin-bottom:5px}
+.pbar{height:100%;background:linear-gradient(90deg,var(--pu),var(--te));border-radius:20px;transition:width .8s ease;width:0%}
+.ppct{font-size:12px;color:var(--mu);margin-bottom:18px;text-align:center}
+.psteps{margin-bottom:14px}
+.ps{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.ps:last-child{border-bottom:none}
+.pd{width:8px;height:8px;border-radius:50%;background:var(--bd);flex-shrink:0;transition:all .3s}
+.pd.d{background:var(--te)}
+.pd.a{background:var(--pu);box-shadow:0 0 0 3px var(--pul)}
+.pt{flex:1}
+.ptm{font-size:11px;color:var(--hi)}
+.peta{font-size:12px;color:var(--mu);margin-bottom:14px;text-align:center}
+.pghl{display:inline-block;padding:8px 15px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--r);font-size:13px;color:var(--tx);text-decoration:none;display:block;text-align:center}
+/* ── VIDEO DONE ── */
+.vwrap{position:relative;max-width:240px;margin:0 auto 14px;border-radius:12px;overflow:hidden;background:#111;aspect-ratio:9/16;display:flex;align-items:center;justify-content:center}
+.vwrap video{width:100%;height:100%;object-fit:cover}
+.vtit{font-size:15px;font-weight:600;margin-bottom:2px;text-align:center}
+.vart{font-size:13px;color:var(--mu);margin-bottom:14px;text-align:center}
+.vrow{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.vbtn{padding:9px 15px;border-radius:var(--r);border:1px solid var(--bd);font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:var(--tx);transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.vbtn.dl{background:var(--te);color:#fff;border-color:var(--te)}
+.vbtn.dl:hover{background:#0F6E56}
+.vbtn.ed{background:var(--pul);color:var(--pud);border-color:var(--pu)}
+.vbtn.ed:hover{background:var(--pu);color:#fff}
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center;padding:16px}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:var(--rl);padding:22px;max-width:400px;width:100%}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:5px}
+.modal p{font-size:13px;color:var(--mu);margin-bottom:13px;line-height:1.5}
 </style>
 </head>
 <body>
-<div class="container">
+<div class="w">
 
-  <div class="header">
-    <div class="header-icon">🎬</div>
-    <h1>Music Video Bot</h1>
-    <p class="subtitle">Crea videos verticales para Spotify y redes sociales</p>
+<div class="hdr">
+  <div class="hico">🎬</div>
+  <h1>Music Video Bot</h1>
+  <p>Videos verticales para Spotify y redes sociales</p>
+</div>
+
+<!-- Memoria -->
+<div class="mem" id="mem">
+  <div class="mtag">🕐 Último proyecto</div>
+  <div class="msong" id="msong">—</div>
+  <div class="mdate" id="mdate">—</div>
+  <div class="mrow">
+    <button class="btn sec" onclick="editarUltimo()" style="flex:1;font-size:13px">✏️ Editar y regenerar</button>
+    <button class="btn p" onclick="nuevoP()" style="font-size:13px">+ Nuevo video</button>
+  </div>
+</div>
+
+<div class="card" id="card">
+
+  <!-- Steps nav -->
+  <div class="sn" id="snav">
+    <div class="si"><div class="sc a" id="sc1">1</div><span class="sl a" id="sl1">Canción</span></div>
+    <div class="sli" id="ln1"></div>
+    <div class="si"><div class="sc" id="sc2">2</div><span class="sl" id="sl2">Estilo</span></div>
+    <div class="sli" id="ln2"></div>
+    <div class="si"><div class="sc" id="sc3">3</div><span class="sl" id="sl3">Referencias</span></div>
   </div>
 
-  <!-- Memoria del último proyecto -->
-  <div class="memory-card" id="memory-card">
-    <div class="memory-title">🕐 Último proyecto</div>
-    <div class="memory-song" id="memory-song-name">—</div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px" id="memory-song-date">—</div>
-    <div class="memory-actions">
-      <button class="btn-memory" onclick="retomar()">✏️ Rehacer con cambios</button>
-      <button class="btn-memory primary" onclick="nuevoProyecto()">+ Nuevo proyecto</button>
+  <div class="ebanner" id="ebanner">✏️ Modo edición — tus datos están cargados. Modifica lo que quieras y regenera.</div>
+
+  <!-- PASO 1 -->
+  <div class="pan on" id="p1">
+    <div class="st">Información de la canción</div>
+    <div class="ss">Sube tu audio e ingresa los datos básicos.</div>
+    <div class="g2">
+      <div class="up" id="aup"><input type="file" accept=".mp3,.wav,.m4a,.flac" onchange="onAudio(this)"><div class="uico">🎵</div><div class="ulbl" id="aulbl">Audio MP3/WAV</div></div>
+      <div class="up" id="iup"><input type="file" accept="image/*" multiple onchange="onImgs(this)"><div class="uico">🖼️</div><div class="ulbl" id="iulbl">Mis imágenes<br><span style="font-size:11px">Opcional</span></div></div>
     </div>
+    <div class="g2">
+      <div><label class="fl">Nombre de la canción *</label><input type="text" id="sn" placeholder="ej. Dust and Destiny" oninput="onCh()"></div>
+      <div><label class="fl">Artista *</label><input type="text" id="ar" placeholder="Tu nombre artístico" oninput="onCh()"></div>
+    </div>
+    <div class="fg"><label class="fl">Link de Spotify <span style="color:var(--hi);font-weight:400">(opcional)</span></label><input type="url" id="sp" placeholder="https://open.spotify.com/track/..."></div>
+    <div class="fg"><label class="fl">¿De qué trata la canción? *</label><textarea id="sd" placeholder="ej. Un hombre solo en la carretera, polvo, libertad y redención..." oninput="onCh()"></textarea></div>
+    <div class="fg">
+      <label class="fl">Género <span style="color:var(--hi);font-weight:400">(auto-detectado)</span></label>
+      <div class="gtr">
+        <span class="gt" onclick="togG(this)">Pop</span><span class="gt" onclick="togG(this)">R&amp;B</span><span class="gt" onclick="togG(this)">Urbano</span><span class="gt" onclick="togG(this)">Electrónica</span><span class="gt" onclick="togG(this)">Balada</span><span class="gt" onclick="togG(this)">Indie</span><span class="gt" onclick="togG(this)">Hip-hop</span><span class="gt" onclick="togG(this)">Reggaeton</span><span class="gt" onclick="togG(this)">Country</span><span class="gt" onclick="togG(this)">Rock</span><span class="gt" onclick="togG(this)">Latin</span>
+      </div>
+    </div>
+    <div class="br"><button class="btn p" onclick="go(2)" id="btn2" disabled>Continuar →</button></div>
   </div>
 
-  <div class="card" id="main-card">
+  <!-- PASO 2 -->
+  <div class="pan" id="p2">
+    <div class="st">Estilo y efectos</div>
+    <div class="ss">Personaliza cómo se verá tu video.</div>
+    <div class="fg"><label class="fl">Paleta de colores</label><div class="pr"><span class="pill s" onclick="sp(this,'pal')">🌑 Oscuro</span><span class="pill" onclick="sp(this,'pal')">☀️ Luminoso</span><span class="pill" onclick="sp(this,'pal')">⚡ Neon</span><span class="pill" onclick="sp(this,'pal')">🌿 Natural</span><span class="pill" onclick="sp(this,'pal')">📷 Vintage</span><span class="pill" onclick="sp(this,'pal')">🎨 Pastel</span></div></div>
+    <div class="fg"><label class="fl">Transición</label><div class="pr"><span class="pill s" onclick="sp(this,'tr')">Ken Burns</span><span class="pill" onclick="sp(this,'tr')">Fade suave</span><span class="pill" onclick="sp(this,'tr')">Slide horizontal</span><span class="pill" onclick="sp(this,'tr')">Slide vertical</span><span class="pill" onclick="sp(this,'tr')">Mezcla</span></div></div>
+    <div class="fg"><label class="fl">Texto en pantalla</label><div class="pr"><span class="pill s" onclick="sp(this,'tx')">Nombre + artista</span><span class="pill" onclick="sp(this,'tx')">Solo al inicio</span><span class="pill" onclick="sp(this,'tx')">Sin texto</span></div></div>
+    <div class="fg"><label class="fl">Efecto de imagen</label><div class="pr"><span class="pill s" onclick="sp(this,'ef')">Sin filtro</span><span class="pill" onclick="sp(this,'ef')">B&amp;N</span><span class="pill" onclick="sp(this,'ef')">Cálido</span><span class="pill" onclick="sp(this,'ef')">Frío</span><span class="pill" onclick="sp(this,'ef')">Alto contraste</span><span class="pill" onclick="sp(this,'ef')">Desenfoque</span></div></div>
+    <div class="fg"><label class="fl">Ritmo visual</label><div class="rr"><span style="font-size:12px;color:var(--mu)">Lento</span><input type="range" min="1" max="5" value="3" id="rh" step="1" oninput="document.getElementById('rv').textContent=this.value"><span style="font-size:12px;color:var(--mu)">Rápido</span><span class="rv" id="rv">3</span></div></div>
+    <div class="fg"><label class="fl">Duración</label><div class="pr"><span class="pill" onclick="sp(this,'du')">30 seg</span><span class="pill s" onclick="sp(this,'du')">60 seg</span><span class="pill" onclick="sp(this,'du')">90 seg</span><span class="pill" onclick="sp(this,'du')">Completa</span></div></div>
+    <div class="fg"><label class="fl">Instrucciones adicionales <span style="color:var(--hi);font-weight:400">(opcional)</span></label><textarea id="vd" placeholder="ej. Imágenes de carretera y desierto, tono melancólico..."></textarea></div>
+    <div class="br"><button class="btn sec" onclick="go(1)">← Atrás</button><button class="btn p" onclick="go(3)">Ver referencias →</button></div>
+  </div>
 
-    <!-- Steps nav -->
-    <div class="steps-nav">
-      <div class="step-item">
-        <div class="step-circle active" id="sc1">1</div>
-        <span class="step-label active" id="sl1">Canción</span>
-      </div>
-      <div class="step-line" id="line1"></div>
-      <div class="step-item">
-        <div class="step-circle" id="sc2">2</div>
-        <span class="step-label" id="sl2">Estilo</span>
-      </div>
-      <div class="step-line" id="line2"></div>
-      <div class="step-item">
-        <div class="step-circle" id="sc3">3</div>
-        <span class="step-label" id="sl3">Referencias</span>
-      </div>
+  <!-- PASO 3 -->
+  <div class="pan" id="p3">
+    <div class="st">Referencias de estilo</div>
+    <div class="ss">Elige el estilo que más te guste. Puedes saltar este paso.</div>
+    <div class="ytc" id="y1" onclick="selY('y1','Lyric video minimalista')"><div class="yt-th">▶</div><div><div class="yt-t">Opción 1 — Lyric video minimalista</div><div class="yt-d">Texto animado sobre imágenes. Baladas y R&B.</div><a class="yt-a" href="https://www.youtube.com/results?search_query=aesthetic+lyric+video+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos ↗</a></div></div>
+    <div class="ytc" id="y2" onclick="selY('y2','Visualizer de audio')"><div class="yt-th">▶</div><div><div class="yt-t">Opción 2 — Visualizer de audio</div><div class="yt-d">Ondas animadas con imágenes. Urbano y electrónica.</div><a class="yt-a" href="https://www.youtube.com/results?search_query=music+visualizer+vertical+reel" target="_blank" onclick="event.stopPropagation()">Ver ejemplos ↗</a></div></div>
+    <div class="ytc" id="y3" onclick="selY('y3','Cinemático Ken Burns')"><div class="yt-th">▶</div><div><div class="yt-t">Opción 3 — Cinemático con imágenes</div><div class="yt-d">Fotos en movimiento suave con título. Estilo film.</div><a class="yt-a" href="https://www.youtube.com/results?search_query=cinematic+slideshow+music+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos ↗</a></div></div>
+    <div class="ytc" id="y4" onclick="selY('y4','Dark aesthetic')"><div class="yt-th">▶</div><div><div class="yt-t">Opción 4 — Dark aesthetic</div><div class="yt-d">Tonos oscuros y contraste alto. Trap y country.</div><a class="yt-a" href="https://www.youtube.com/results?search_query=dark+aesthetic+music+video+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos ↗</a></div></div>
+    <div class="ytc" id="y0" onclick="selY('y0','auto')"><div class="yt-th">🤖</div><div><div class="yt-t">Ninguna — el bot elige automáticamente</div><div class="yt-d">Según el género y descripción de tu canción.</div></div></div>
+    <div class="br"><button class="btn sec" onclick="go(2)">← Atrás</button><button class="btn p" id="bgen" onclick="generar()">🎬 Generar video</button></div>
+  </div>
+
+  <!-- PROGRESO -->
+  <div class="pan" id="pprog">
+    <div class="psong" id="pgsong">—</div>
+    <div class="partist" id="pgartist">—</div>
+    <div class="pbar-w"><div class="pbar" id="pgbar"></div></div>
+    <div class="ppct" id="pgpct">0% — iniciando...</div>
+    <div class="psteps">
+      <div class="ps"><div class="pd a" id="pd0"></div><div class="pt">Configuración enviada</div><div class="ptm" id="pt0"></div></div>
+      <div class="ps"><div class="pd" id="pd1"></div><div class="pt">Instalando dependencias</div><div class="ptm" id="pt1"></div></div>
+      <div class="ps"><div class="pd" id="pd2"></div><div class="pt">Buscando letra de la canción</div><div class="ptm" id="pt2"></div></div>
+      <div class="ps"><div class="pd" id="pd3"></div><div class="pt">Generando concepto visual con IA</div><div class="ptm" id="pt3"></div></div>
+      <div class="ps"><div class="pd" id="pd4"></div><div class="pt">Recopilando imágenes</div><div class="ptm" id="pt4"></div></div>
+      <div class="ps"><div class="pd" id="pd5"></div><div class="pt">Ensamblando video 9:16</div><div class="ptm" id="pt5"></div></div>
+      <div class="ps"><div class="pd" id="pd6"></div><div class="pt">Guardando en output/</div><div class="ptm" id="pt6"></div></div>
     </div>
+    <div class="peta" id="pgeta">Tiempo estimado: 15-20 minutos</div>
+    <a class="pghl" href="https://github.com/appcml/music-video-bot/actions" target="_blank">Ver log completo en GitHub ↗</a>
+  </div>
 
-    <!-- PASO 1 -->
-    <div class="step-panel active" id="panel1">
-      <div class="section-title">Información de la canción</div>
-      <div class="section-sub">Sube tu archivo de audio e ingresa los datos básicos.</div>
-
-      <div class="grid-2" style="margin-bottom:14px">
-        <div class="upload-area" id="audio-upload">
-          <input type="file" accept=".mp3,.wav,.m4a,.flac" onchange="onAudioUpload(this)">
-          <div class="upload-icon">🎵</div>
-          <div class="upload-label" id="audio-label">Subir audio<br><span style="font-size:11px">MP3 / WAV / M4A</span></div>
-        </div>
-        <div class="upload-area" id="imgs-upload">
-          <input type="file" accept="image/*" multiple onchange="onImgsUpload(this)">
-          <div class="upload-icon">🖼️</div>
-          <div class="upload-label" id="imgs-label">Mis imágenes<br><span style="font-size:11px">Opcional — varias</span></div>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="field-group">
-          <label class="field-label">Nombre de la canción *</label>
-          <input type="text" id="song-name" placeholder="ej. Noche sin ti" oninput="onSongInput()">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Artista *</label>
-          <input type="text" id="artist-name" placeholder="Tu nombre artístico">
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Link de Spotify <span style="color:var(--text-hint);font-weight:400">(opcional — para obtener letra automática)</span></label>
-        <input type="url" id="spotify-link" placeholder="https://open.spotify.com/track/...">
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">¿De qué trata la canción? *</label>
-        <textarea id="song-desc" placeholder="ej. Una canción sobre el desamor en la ciudad, melancolía nocturna, recuerdos de alguien que se fue..." oninput="onSongInput()"></textarea>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Género musical <span style="color:var(--text-hint);font-weight:400">(detectado automáticamente — puedes cambiar)</span></label>
-        <div class="genre-row" id="genre-row">
-          <span class="genre-tag" onclick="toggleGenre(this)">Pop</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">R&B</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Urbano</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Electrónica</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Balada</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Indie</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Hip-hop</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Reggaeton</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Latin</span>
-          <span class="genre-tag" onclick="toggleGenre(this)">Rock</span>
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn primary" onclick="goStep(2)" id="btn-step2" disabled>Continuar →</button>
-      </div>
+  <!-- VIDEO LISTO -->
+  <div class="pan" id="pdone">
+    <div class="vwrap" id="vwrap">
+      <video id="vplayer" controls playsinline style="width:100%;height:100%;object-fit:cover"></video>
     </div>
-
-    <!-- PASO 2 -->
-    <div class="step-panel" id="panel2">
-      <div class="section-title">Estilo y efectos del video</div>
-      <div class="section-sub">Personaliza cómo se verá tu video. Cada opción afecta el resultado final.</div>
-
-      <div class="field-group">
-        <label class="field-label">Paleta de colores</label>
-        <div class="pills-row">
-          <span class="pill sel" onclick="selPill(this,'palette')">🌑 Oscuro</span>
-          <span class="pill" onclick="selPill(this,'palette')">☀️ Luminoso</span>
-          <span class="pill" onclick="selPill(this,'palette')">⚡ Neon</span>
-          <span class="pill" onclick="selPill(this,'palette')">🌿 Natural</span>
-          <span class="pill" onclick="selPill(this,'palette')">📷 Vintage</span>
-          <span class="pill" onclick="selPill(this,'palette')">🎨 Pastel</span>
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Transición entre imágenes</label>
-        <div class="pills-row">
-          <span class="pill sel" onclick="selPill(this,'trans')">Ken Burns (zoom)</span>
-          <span class="pill" onclick="selPill(this,'trans')">Fade suave</span>
-          <span class="pill" onclick="selPill(this,'trans')">Slide horizontal</span>
-          <span class="pill" onclick="selPill(this,'trans')">Slide vertical</span>
-          <span class="pill" onclick="selPill(this,'trans')">Mezcla aleatoria</span>
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Texto en pantalla</label>
-        <div class="pills-row">
-          <span class="pill sel" onclick="selPill(this,'text-style')">Nombre + artista</span>
-          <span class="pill" onclick="selPill(this,'text-style')">Letra sincronizada</span>
-          <span class="pill" onclick="selPill(this,'text-style')">Solo al inicio</span>
-          <span class="pill" onclick="selPill(this,'text-style')">Sin texto</span>
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Efecto de imagen</label>
-        <div class="pills-row">
-          <span class="pill sel" onclick="selPill(this,'effect')">Sin filtro</span>
-          <span class="pill" onclick="selPill(this,'effect')">Desaturado (B&N)</span>
-          <span class="pill" onclick="selPill(this,'effect')">Cálido</span>
-          <span class="pill" onclick="selPill(this,'effect')">Frío</span>
-          <span class="pill" onclick="selPill(this,'effect')">Alto contraste</span>
-          <span class="pill" onclick="selPill(this,'effect')">Desenfoque suave</span>
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Ritmo visual — velocidad de cambio de imagen</label>
-        <div class="rhythm-row">
-          <span style="font-size:12px;color:var(--text-muted)">Lento</span>
-          <input type="range" min="1" max="5" value="3" id="rhythm" step="1" oninput="document.getElementById('rv').textContent=this.value">
-          <span style="font-size:12px;color:var(--text-muted)">Rápido</span>
-          <span class="rhythm-val" id="rv">3</span>
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Duración del video</label>
-        <div class="pills-row">
-          <span class="pill" onclick="selPill(this,'duration')">30 seg (Reel corto)</span>
-          <span class="pill sel" onclick="selPill(this,'duration')">60 seg (Reel estándar)</span>
-          <span class="pill" onclick="selPill(this,'duration')">90 seg</span>
-          <span class="pill" onclick="selPill(this,'duration')">Duración completa</span>
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Descripción adicional del video <span style="color:var(--text-hint);font-weight:400">(opcional)</span></label>
-        <textarea id="video-desc" placeholder="ej. Quiero imágenes de ciudad de noche, tono melancólico, sin texto sobre las imágenes..."></textarea>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn secondary" onclick="goStep(1)">← Atrás</button>
-        <button class="btn primary" onclick="goStep(3)">Ver referencias →</button>
-      </div>
+    <div class="vtit" id="vtsong">—</div>
+    <div class="vart" id="vtartist">—</div>
+    <div class="vrow">
+      <button class="vbtn dl" id="vdl" onclick="descargar()">⬇ Descargar MP4</button>
+      <button class="vbtn ed" onclick="editarVideo()">✏️ Ajustar video</button>
+      <button class="vbtn" onclick="nuevoP()">+ Nuevo</button>
     </div>
+    <p style="font-size:12px;color:var(--mu);text-align:center">El video también está en <code style="background:var(--bg);padding:1px 5px;border-radius:4px">output/</code> del repositorio</p>
+  </div>
 
-    <!-- PASO 3 -->
-    <div class="step-panel" id="panel3">
-      <div class="section-title">Referencias de estilo</div>
-      <div class="section-sub">Revisa estos ejemplos en YouTube y elige el que más se parezca a lo que quieres. También puedes saltar este paso.</div>
+</div><!-- /card -->
+</div><!-- /wrap -->
 
-      <div id="yt-recs">
-
-        <div class="yt-card" id="yt1" onclick="selYT('yt1','Lyric video minimalista')">
-          <div class="yt-thumb">▶</div>
-          <div class="yt-info">
-            <div class="yt-title">Opción 1 — Lyric video minimalista</div>
-            <div class="yt-desc">Texto animado sobre imágenes suaves. Ideal para baladas, R&B e indie.</div>
-            <a class="yt-link" href="https://www.youtube.com/results?search_query=aesthetic+lyric+video+vertical+spotify" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
-          </div>
-        </div>
-
-        <div class="yt-card" id="yt2" onclick="selYT('yt2','Visualizer de audio animado')">
-          <div class="yt-thumb">▶</div>
-          <div class="yt-info">
-            <div class="yt-title">Opción 2 — Visualizer de audio</div>
-            <div class="yt-desc">Ondas de audio animadas sobre fondo oscuro o imágenes. Para urbano y electrónica.</div>
-            <a class="yt-link" href="https://www.youtube.com/results?search_query=music+visualizer+vertical+video+reel" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
-          </div>
-        </div>
-
-        <div class="yt-card" id="yt3" onclick="selYT('yt3','Cinemático con Ken Burns')">
-          <div class="yt-thumb">▶</div>
-          <div class="yt-info">
-            <div class="yt-title">Opción 3 — Cinemático con imágenes</div>
-            <div class="yt-desc">Fotos en movimiento suave con superposición del título. Estilo cinematográfico.</div>
-            <a class="yt-link" href="https://www.youtube.com/results?search_query=cinematic+slideshow+music+video+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
-          </div>
-        </div>
-
-        <div class="yt-card" id="yt4" onclick="selYT('yt4','Color grading oscuro')">
-          <div class="yt-thumb">▶</div>
-          <div class="yt-info">
-            <div class="yt-title">Opción 4 — Color grading oscuro</div>
-            <div class="yt-desc">Imágenes con tonos oscuros y contraste alto. Para trap, dark pop y ambient.</div>
-            <a class="yt-link" href="https://www.youtube.com/results?search_query=dark+aesthetic+music+video+vertical+reels" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
-          </div>
-        </div>
-
-        <div class="yt-card" id="yt5" onclick="selYT('yt5','Neon y luces urbanas')">
-          <div class="yt-thumb">▶</div>
-          <div class="yt-info">
-            <div class="yt-title">Opción 5 — Neon y luces urbanas</div>
-            <div class="yt-desc">Imágenes de ciudad nocturna con efectos de luz de colores. Urbano y electrónica.</div>
-            <a class="yt-link" href="https://www.youtube.com/results?search_query=neon+city+music+video+aesthetic+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
-          </div>
-        </div>
-
-        <div class="yt-card" id="yt0" onclick="selYT('yt0','auto')">
-          <div class="yt-thumb" style="font-size:16px">🤖</div>
-          <div class="yt-info">
-            <div class="yt-title">Ninguna — dejar al bot decidir</div>
-            <div class="yt-desc">El bot elige el estilo automáticamente según el género y la descripción de tu canción.</div>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="btn-row">
-        <button class="btn secondary" onclick="goStep(2)">← Atrás</button>
-        <button class="btn primary" onclick="submitForm()" id="btn-submit">🎬 Generar video</button>
-      </div>
+<!-- Token modal -->
+<div class="modal-bg" id="tokmod">
+  <div class="modal">
+    <h3>GitHub Token</h3>
+    <p>Ingresa tu Personal Access Token. Se guarda solo en tu navegador — nunca en el código.</p>
+    <input type="password" id="tokin" placeholder="github_pat_...">
+    <div class="br" style="margin-top:11px">
+      <button class="btn sec" onclick="document.getElementById('tokmod').classList.remove('on')">Cancelar</button>
+      <button class="btn p" onclick="saveTok()">Guardar y continuar</button>
     </div>
-
-    <!-- PANTALLA DE ÉXITO -->
-    <div class="step-panel" id="panel-success">
-      <div class="success-screen">
-        <div class="success-icon">✅</div>
-        <div class="success-title">¡Video en producción!</div>
-        <div class="success-sub">GitHub Actions está generando tu video. Cuando termine lo encontrarás en la carpeta <code style="background:var(--gray-bg);padding:1px 5px;border-radius:4px">output/</code> del repositorio.</div>
-
-        <div class="progress-steps">
-          <div class="progress-step"><div class="ps-dot done"></div>Configuración enviada</div>
-          <div class="progress-step"><div class="ps-dot active"></div>Buscando letra de la canción</div>
-          <div class="progress-step"><div class="ps-dot"></div>Generando imágenes con IA</div>
-          <div class="progress-step"><div class="ps-dot"></div>Ensamblando video 9:16</div>
-          <div class="progress-step"><div class="ps-dot"></div>Guardando en output/</div>
-        </div>
-
-        <a href="https://github.com/appcml/music-video-bot/actions" target="_blank" style="display:inline-block;padding:9px 18px;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:var(--radius);font-size:13px;color:var(--text);text-decoration:none;margin-bottom:10px">Ver progreso en GitHub Actions ↗</a>
-
-        <div style="margin-top:8px">
-          <button class="btn primary" onclick="resetForm()" style="width:100%">+ Crear otro video</button>
-        </div>
-      </div>
-    </div>
-
+    <p style="font-size:11px;color:var(--hi);margin-top:9px;text-align:center">Guardado en localStorage — solo tú lo ves</p>
   </div>
 </div>
 
 <script>
-// ── Estado del formulario ────────────────────────────────
-const state = {
-  step: 1,
-  audioFile: null,
-  audioFileName: '',
-  imageFiles: [],
-  songName: '',
-  artistName: '',
-  spotifyLink: '',
-  songDesc: '',
-  videoDesc: '',
-  genres: [],
-  palette: 'Oscuro',
-  transition: 'Ken Burns (zoom)',
-  textStyle: 'Nombre + artista',
-  effect: 'Sin filtro',
-  rhythm: 3,
-  duration: '60 seg (Reel estándar)',
-  ytRef: 'auto',
-  ytRefName: '',
-};
+const S={pal:'Oscuro',tr:'Ken Burns',tx:'Nombre + artista',ef:'Sin filtro',du:'60 seg',rh:3,ytName:'auto',audioName:'',pollTimer:null,simTimer:null,startTime:null,runId:null,editMode:false};
 
-// ── Memoria local ────────────────────────────────────────
-function loadMemory() {
-  const mem = localStorage.getItem('mvbot_last');
-  if (!mem) return;
-  try {
-    const m = JSON.parse(mem);
-    document.getElementById('memory-card').classList.add('visible');
-    document.getElementById('memory-song-name').textContent = `"${m.songName}" — ${m.artistName}`;
-    document.getElementById('memory-song-date').textContent = `Generado el ${m.date}`;
-    window._lastProject = m;
-  } catch(e) {}
+// ── Memoria ──────────────────────────────────────────────
+function loadMem(){
+  const m=localStorage.getItem('mvbot_last');
+  if(!m)return;
+  try{
+    const d=JSON.parse(m);
+    document.getElementById('mem').classList.add('on');
+    document.getElementById('msong').textContent=`"${d.song}" — ${d.artist}`;
+    document.getElementById('mdate').textContent=`Generado el ${d.date}`;
+    window._mem=d;
+  }catch(e){}
+}
+function saveMem(){
+  localStorage.setItem('mvbot_last',JSON.stringify({
+    song:v('sn'),artist:v('ar'),spotify:v('sp'),desc:v('sd'),vdesc:v('vd'),
+    genres:getG().join(','),pal:S.pal,tr:S.tr,tx:S.tx,ef:S.ef,du:S.du,
+    rh:document.getElementById('rh').value,ytName:S.ytName,audioName:S.audioName,
+    date:new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}),
+  }));
+}
+function editarUltimo(){
+  const d=window._mem; if(!d)return;
+  document.getElementById('mem').classList.remove('on');
+  set('sn',d.song||''); set('ar',d.artist||''); set('sp',d.spotify||'');
+  set('sd',d.desc||''); set('vd',d.vdesc||'');
+  if(d.rh) document.getElementById('rh').value=d.rh;
+  S.editMode=true;
+  document.getElementById('ebanner').classList.add('on');
+  onCh(); go(1);
+}
+function nuevoP(){
+  document.getElementById('mem').classList.remove('on');
+  S.editMode=false;
+  document.getElementById('ebanner').classList.remove('on');
+  reset();
+}
+function editarVideo(){
+  S.editMode=true;
+  document.getElementById('ebanner').classList.add('on');
+  document.querySelectorAll('.pan').forEach(p=>p.classList.remove('on'));
+  document.getElementById('snav').style.display='flex';
+  document.getElementById('p1').classList.add('on');
+  updS(1);
 }
 
-function saveMemory(data) {
-  const mem = {
-    songName: data.songName,
-    artistName: data.artistName,
-    genres: data.genres,
-    palette: data.palette,
-    date: new Date().toLocaleDateString('es-ES', {day:'numeric',month:'long',year:'numeric'}),
-  };
-  localStorage.setItem('mvbot_last', JSON.stringify(mem));
+// ── Helpers ───────────────────────────────────────────────
+const v=id=>document.getElementById(id).value.trim();
+const set=(id,val)=>{document.getElementById(id).value=val;};
+function getG(){return Array.from(document.querySelectorAll('.gt.s,.gt.au')).map(t=>t.textContent);}
+function markPD(i,cls){
+  const d=document.getElementById('pd'+i);
+  if(!d)return;
+  d.classList.remove('d','a');
+  if(cls) d.classList.add(cls);
+  if(cls==='d') document.getElementById('pt'+i).textContent='✓';
 }
 
-function retomar() {
-  const m = window._lastProject;
-  if (!m) return;
-  document.getElementById('memory-card').classList.remove('visible');
-  document.getElementById('song-name').value = m.songName || '';
-  document.getElementById('artist-name').value = m.artistName || '';
-  state.songName = m.songName || '';
-  state.artistName = m.artistName || '';
-  checkStep1();
-  goStep(1);
+// ── Steps ─────────────────────────────────────────────────
+function go(n){
+  document.querySelectorAll('.pan').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p'+n).classList.add('on');
+  updS(n);
+  window.scrollTo({top:0,behavior:'smooth'});
 }
-
-function nuevoProyecto() {
-  document.getElementById('memory-card').classList.remove('visible');
-  resetForm();
-}
-
-// ── Navegación de pasos ──────────────────────────────────
-function goStep(n) {
-  state.step = n;
-  for (let i = 1; i <= 3; i++) {
-    document.getElementById('panel'+i).classList.remove('active');
-    const sc = document.getElementById('sc'+i);
-    const sl = document.getElementById('sl'+i);
-    sc.classList.remove('active','done');
-    sl.classList.remove('active');
-    if (i < n) { sc.classList.add('done'); sc.textContent = '✓'; }
-    else if (i === n) { sc.classList.add('active'); sc.textContent = i; sl.classList.add('active'); }
-    else { sc.textContent = i; }
-  }
-  for (let i = 1; i <= 2; i++) {
-    document.getElementById('line'+i).classList.toggle('done', i < n);
-  }
-  document.getElementById('panel'+n).classList.add('active');
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-// ── Paso 1 ───────────────────────────────────────────────
-function onAudioUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-  state.audioFile = file;
-  state.audioFileName = file.name;
-  const area = document.getElementById('audio-upload');
-  area.classList.add('uploaded');
-  document.getElementById('audio-label').innerHTML = `${file.name}<br><span style="font-size:11px">${(file.size/1024/1024).toFixed(1)} MB</span>`;
-  checkStep1();
-}
-
-function onImgsUpload(input) {
-  const files = Array.from(input.files);
-  state.imageFiles = files;
-  const area = document.getElementById('imgs-upload');
-  area.classList.add('uploaded');
-  document.getElementById('imgs-label').innerHTML = `${files.length} imagen${files.length>1?'es':''}<br><span style="font-size:11px">listas para usar</span>`;
-}
-
-function onSongInput() {
-  state.songName = document.getElementById('song-name').value.trim();
-  state.songDesc = document.getElementById('song-desc').value.trim();
-  detectGenre();
-  checkStep1();
-}
-
-function checkStep1() {
-  const ok = state.audioFileName && state.songName && document.getElementById('artist-name').value.trim() && state.songDesc;
-  document.getElementById('btn-step2').disabled = !ok;
-}
-
-function detectGenre() {
-  const desc = (document.getElementById('song-desc').value + ' ' + document.getElementById('song-name').value).toLowerCase();
-  const map = {
-    'Balada': ['amor','desamor','melanc','triste','llor','corazón','extraño','perdiste','noche','solo','soledad'],
-    'R&B': ['soul','suave','sensual','cuerpo','piel','ritmo lento'],
-    'Urbano': ['calle','barrio','flow','trap','perreo','dembow'],
-    'Reggaeton': ['perreo','dembow','twerk','reggaeton'],
-    'Electrónica': ['electr','beat','synth','drop','dj','club','baile'],
-    'Hip-hop': ['rap','rima','verso','flow','freestyle','hip'],
-    'Indie': ['indie','alternativ','folk','acustic','guitarra'],
-    'Pop': ['pop','pegajosa','radio','hit','chorus'],
-  };
-  document.querySelectorAll('.genre-tag').forEach(t => t.classList.remove('auto'));
-  for (const [genre, keywords] of Object.entries(map)) {
-    if (keywords.some(k => desc.includes(k))) {
-      document.querySelectorAll('.genre-tag').forEach(t => {
-        if (t.textContent === genre) t.classList.add('auto');
-      });
-    }
+function updS(n){
+  document.getElementById('snav').style.display='flex';
+  for(let i=1;i<=3;i++){
+    const sc=document.getElementById('sc'+i),sl=document.getElementById('sl'+i);
+    sc.classList.remove('a','d'); sl.classList.remove('a');
+    if(i<n){sc.classList.add('d');sc.textContent='✓';}
+    else if(i===n){sc.classList.add('a');sc.textContent=i;sl.classList.add('a');}
+    else sc.textContent=i;
+    if(i<=2) document.getElementById('ln'+i).classList.toggle('d',i<n);
   }
 }
 
-function toggleGenre(el) {
-  el.classList.toggle('sel');
-  el.classList.remove('auto');
-  state.genres = Array.from(document.querySelectorAll('.genre-tag.sel, .genre-tag.auto'))
-    .map(t => t.textContent);
+// ── Form ──────────────────────────────────────────────────
+function onAudio(inp){
+  const f=inp.files[0]; if(!f)return;
+  S.audioName=f.name;
+  document.getElementById('aup').classList.add('ok');
+  document.getElementById('aulbl').innerHTML=`${f.name}<br><span style="font-size:11px">${(f.size/1024/1024).toFixed(1)}MB</span>`;
+  onCh();
+}
+function onImgs(inp){
+  const n=inp.files.length;
+  document.getElementById('iup').classList.add('ok');
+  document.getElementById('iulbl').innerHTML=`${n} imagen${n>1?'es':''}<br><span style="font-size:11px">listas</span>`;
+}
+function onCh(){
+  const ok=S.audioName && v('sn') && v('ar') && v('sd');
+  document.getElementById('btn2').disabled=!ok;
+  detectG();
+}
+function togG(el){el.classList.toggle('s');el.classList.remove('au');}
+function detectG(){
+  const txt=(v('sd')+' '+v('sn')).toLowerCase();
+  const map={'Balada':['amor','desamor','melanc','triste','corazón','noche','solo'],'Country':['carretera','polvo','cowboy','desert','road','boots'],'Rock':['rock','guitarra','banda'],'R&B':['soul','suave','sensual'],'Urbano':['calle','barrio','flow','trap'],'Electrónica':['electr','beat','synth','club']};
+  document.querySelectorAll('.gt').forEach(t=>t.classList.remove('au'));
+  for(const[g,kw]of Object.entries(map)){
+    if(kw.some(k=>txt.includes(k))) document.querySelectorAll('.gt').forEach(t=>{if(t.textContent===g)t.classList.add('au');});
+  }
+}
+function sp(el,g){
+  el.closest('.pr').querySelectorAll('.pill').forEach(p=>p.classList.remove('s'));
+  el.classList.add('s');
+  const val=el.textContent.replace(/[🌑☀️⚡🌿📷🎨]/u,'').trim();
+  if(g==='pal')S.pal=val; if(g==='tr')S.tr=val; if(g==='tx')S.tx=val;
+  if(g==='ef')S.ef=val;   if(g==='du')S.du=val;
+}
+function selY(id,name){
+  document.querySelectorAll('.ytc').forEach(c=>c.classList.remove('s'));
+  document.getElementById(id).classList.add('s');
+  S.ytName=name;
+  document.getElementById('bgen').textContent=name==='auto'?'🎬 Generar video':`🎬 Generar — "${name}"`;
 }
 
-// ── Paso 2 ───────────────────────────────────────────────
-function selPill(el, group) {
-  el.closest('.pills-row').querySelectorAll('.pill').forEach(p => p.classList.remove('sel'));
-  el.classList.add('sel');
-  const text = el.textContent.replace(/[🌑☀️⚡🌿📷🎨]/u,'').trim();
-  if (group === 'palette') state.palette = text;
-  if (group === 'trans') state.transition = text;
-  if (group === 'text-style') state.textStyle = text;
-  if (group === 'effect') state.effect = text;
-  if (group === 'duration') state.duration = text;
+// ── Token ─────────────────────────────────────────────────
+function saveTok(){
+  const t=document.getElementById('tokin').value.trim();
+  if(!t)return;
+  localStorage.setItem('mvbot_tok',t);
+  document.getElementById('tokmod').classList.remove('on');
+  disparar();
 }
 
-// ── Paso 3 ───────────────────────────────────────────────
-function selYT(id, name) {
-  document.querySelectorAll('.yt-card').forEach(c => c.classList.remove('sel'));
-  document.getElementById(id).classList.add('sel');
-  state.ytRef = id;
-  state.ytRefName = name;
-  const btn = document.getElementById('btn-submit');
-  btn.textContent = name === 'auto' ? '🎬 Generar video (estilo automático)' : `🎬 Generar — estilo "${name}"`;
-}
-
-// ── Submit ───────────────────────────────────────────────
-async function submitForm() {
-  // Obtener token guardado localmente
-  const token = localStorage.getItem('mvbot_gh_token');
-  if (!token) {
-    document.getElementById('token-modal').style.display = 'flex';
+// ── Generar ───────────────────────────────────────────────
+async function generar(){
+  if(!localStorage.getItem('mvbot_tok')){
+    document.getElementById('tokmod').classList.add('on');
     return;
   }
+  await disparar();
+}
 
-  const btn = document.getElementById('btn-submit');
-  btn.disabled = true;
-  btn.textContent = '⏳ Enviando a GitHub Actions...';
+async function disparar(){
+  const tok=localStorage.getItem('mvbot_tok');
+  const song=v('sn'), artist=v('ar');
+  saveMem();
+  const btn=document.getElementById('bgen');
+  btn.disabled=true; btn.textContent='⏳ Enviando...';
 
-  // Recopilar estado final
-  state.songName    = document.getElementById('song-name').value.trim();
-  state.artistName  = document.getElementById('artist-name').value.trim();
-  state.spotifyLink = document.getElementById('spotify-link').value.trim();
-  state.songDesc    = document.getElementById('song-desc').value.trim();
-  state.videoDesc   = document.getElementById('video-desc').value.trim();
-  state.rhythm      = document.getElementById('rhythm').value;
-  state.genres      = Array.from(document.querySelectorAll('.genre-tag.sel, .genre-tag.auto')).map(t => t.textContent);
+  const payload={ref:'main',inputs:{
+    song_name:song, artist:artist,
+    song_desc:v('sd'), video_desc:v('vd')||'',
+    genres:getG().join(',')||'Pop',
+    palette:S.pal, transition:S.tr, text_style:S.tx,
+    effect:S.ef, rhythm:String(document.getElementById('rh').value),
+    duration:S.du+' (Reel estándar)',
+    yt_ref:S.ytName||'auto',
+    spotify_link:v('sp')||'',
+    audio_name:S.audioName||'',
+  }};
 
-  saveMemory(state);
-
-  const payload = {
-    ref: 'main',
-    inputs: {
-      song_name:    state.songName,
-      artist:       state.artistName,
-      song_desc:    state.songDesc,
-      video_desc:   state.videoDesc || '',
-      genres:       state.genres.join(',') || 'Pop',
-      palette:      state.palette || 'Oscuro',
-      transition:   state.transition || 'Ken Burns (zoom)',
-      text_style:   state.textStyle || 'Nombre + artista',
-      effect:       state.effect || 'Sin filtro',
-      rhythm:       String(state.rhythm || '3'),
-      duration:     state.duration || '60 seg (Reel estándar)',
-      yt_ref:       state.ytRefName || 'auto',
-      spotify_link: state.spotifyLink || '',
-      audio_name:   state.audioFileName || '',
-    }
-  };
-
-  try {
-    const res = await fetch(
-      'https://api.github.com/repos/appcml/music-video-bot/actions/workflows/music_video.yml/dispatches',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github+json',
-          'Content-Type': 'application/json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (res.status === 204) {
-      mostrarExito();
-    } else if (res.status === 401) {
-      localStorage.removeItem('mvbot_gh_token');
-      btn.disabled = false;
-      btn.textContent = '🎬 Generar video';
-      alert('Token inválido o expirado. Ingresa tu token nuevamente.');
-      document.getElementById('token-modal').style.display = 'flex';
+  try{
+    const res=await fetch('https://api.github.com/repos/appcml/music-video-bot/actions/workflows/music_video.yml/dispatches',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${tok}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},
+      body:JSON.stringify(payload),
+    });
+    if(res.status===204){
+      // Mostrar pantalla de progreso
+      document.getElementById('snav').style.display='none';
+      document.getElementById('ebanner').classList.remove('on');
+      document.querySelectorAll('.pan').forEach(p=>p.classList.remove('on'));
+      document.getElementById('pprog').classList.add('on');
+      document.getElementById('pgsong').textContent=`"${song}"`;
+      document.getElementById('pgartist').textContent=artist;
+      S.startTime=Date.now();
+      markPD(0,'d');
+      iniciarSim();
+      setTimeout(()=>iniciarPoll(tok,song),10000);
+    } else if(res.status===401){
+      localStorage.removeItem('mvbot_tok');
+      btn.disabled=false; btn.textContent='🎬 Generar video';
+      alert('Token inválido. Ingresa uno nuevo.');
+      document.getElementById('tokmod').classList.add('on');
     } else {
-      const err = await res.text();
-      console.error('GitHub API error:', res.status, err);
-      btn.disabled = false;
-      btn.textContent = '❌ Error — intenta de nuevo';
-      alert(`Error ${res.status}. Verifica que el token tenga permisos de Actions.`);
+      btn.disabled=false; btn.textContent='🎬 Generar video';
+      alert(`Error ${res.status}. Verifica permisos del token.`);
     }
-  } catch(e) {
-    console.error('Fetch error:', e);
-    btn.disabled = false;
-    btn.textContent = '❌ Error de conexión';
-    alert('Error de conexión. Intenta de nuevo.');
+  }catch(e){
+    btn.disabled=false; btn.textContent='🎬 Generar video';
+    alert('Error de conexión.');
   }
 }
 
-function guardarToken() {
-  const t = document.getElementById('token-input').value.trim();
-  if (!t) return;
-  localStorage.setItem('mvbot_gh_token', t);
-  document.getElementById('token-modal').style.display = 'none';
-  submitForm();
-}
-
-function mostrarExito() {
-  for (let i = 1; i <= 3; i++) {
-    document.getElementById('panel'+i).classList.remove('active');
+// ── Simulación de progreso ────────────────────────────────
+const STEP_MIN=[0,2,4,7,10,14,18];
+const STEP_LBL=['Configuración enviada','Instalando dependencias','Buscando letra','Generando concepto IA','Recopilando imágenes','Ensamblando video','Guardando'];
+function iniciarSim(){
+  let i=1;
+  function tick(){
+    if(i>=7)return;
+    if(i>0) markPD(i-1,'d');
+    markPD(i,'a');
+    const pct=Math.round((i/7)*100);
+    document.getElementById('pgbar').style.width=pct+'%';
+    document.getElementById('pgpct').textContent=`${pct}% — ${STEP_LBL[i]}...`;
+    const elapsed=Math.round((Date.now()-S.startTime)/60000);
+    const remaining=Math.max(1,20-elapsed);
+    document.getElementById('pgeta').textContent=`Paso ${i+1}/7 — ~${remaining} min restantes`;
+    i++;
+    if(i<7) S.simTimer=setTimeout(tick,(STEP_MIN[i]-STEP_MIN[i-1])*60000);
   }
-  document.getElementById('panel-success').classList.add('active');
-  ['sc1','sc2','sc3'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.remove('active');
-    el.classList.add('done');
-    el.textContent = '✓';
-  });
-  ['line1','line2'].forEach(id => document.getElementById(id).classList.add('done'));
+  S.simTimer=setTimeout(tick,STEP_MIN[1]*60000);
 }
 
-
-
-function resetForm() {
-  location.reload();
+// ── Polling GitHub API ────────────────────────────────────
+function iniciarPoll(tok,song){
+  S.pollTimer=setInterval(()=>pollRun(tok,song),10000);
+  pollRun(tok,song);
+}
+async function pollRun(tok,song){
+  try{
+    const res=await fetch('https://api.github.com/repos/appcml/music-video-bot/actions/runs?per_page=5&event=workflow_dispatch',{
+      headers:{'Authorization':`Bearer ${tok}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},
+    });
+    const data=await res.json();
+    const run=data.workflow_runs?.find(r=>r.name==='🎬 Music Video Bot');
+    if(!run)return;
+    S.runId=run.id;
+    if(run.status==='completed'){
+      clearInterval(S.pollTimer);
+      if(S.simTimer) clearTimeout(S.simTimer);
+      if(run.conclusion==='success'){
+        for(let i=0;i<7;i++) markPD(i,'d');
+        document.getElementById('pgbar').style.width='100%';
+        document.getElementById('pgpct').textContent='100% — ¡Video listo!';
+        document.getElementById('pgeta').textContent='';
+        setTimeout(()=>mostrarVideo(tok,song),2000);
+      } else {
+        document.getElementById('pgpct').textContent='Error al generar. Revisa los logs en GitHub.';
+      }
+    }
+  }catch(e){console.log('Poll:',e);}
 }
 
-// ── Init ─────────────────────────────────────────────────
-loadMemory();
+async function mostrarVideo(tok,song){
+  document.querySelectorAll('.pan').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pdone').classList.add('on');
+  document.getElementById('snav').style.display='none';
+  document.getElementById('vtsong').textContent=`"${song}"`;
+  document.getElementById('vtartist').textContent=v('ar');
+
+  // Intentar obtener artefacto para descarga
+  try{
+    const res=await fetch(`https://api.github.com/repos/appcml/music-video-bot/actions/runs/${S.runId}/artifacts`,{
+      headers:{'Authorization':`Bearer ${tok}`,'Accept':'application/vnd.github+json'},
+    });
+    const data=await res.json();
+    const art=data.artifacts?.[0];
+    if(art){
+      S.artId=art.id;
+      // Mostrar placeholder de video
+      document.getElementById('vwrap').innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;padding:20px;text-align:center"><div style="font-size:44px;margin-bottom:10px">🎬</div><div style="font-size:14px;font-weight:600;margin-bottom:5px">¡Video generado!</div><div style="font-size:12px;opacity:.7">Descárgalo para reproducirlo</div></div>`;
+    }
+  }catch(e){console.log('Art:',e);}
+}
+
+async function descargar(){
+  const tok=localStorage.getItem('mvbot_tok');
+  if(!tok||!S.artId){
+    window.open(`https://github.com/appcml/music-video-bot/actions/runs/${S.runId}#artifacts`,'_blank');
+    return;
+  }
+  try{
+    const res=await fetch(`https://api.github.com/repos/appcml/music-video-bot/actions/artifacts/${S.artId}/zip`,{
+      headers:{'Authorization':`Bearer ${tok}`},
+    });
+    const blob=await res.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`${v('sn')||'video'}.zip`;
+    a.click();
+  }catch(e){
+    window.open(`https://github.com/appcml/music-video-bot/tree/main/output`,'_blank');
+  }
+}
+
+// ── Reset ─────────────────────────────────────────────────
+function reset(){
+  ['sn','ar','sp','sd','vd'].forEach(id=>set(id,''));
+  document.getElementById('aup').classList.remove('ok');
+  document.getElementById('aulbl').innerHTML='Audio MP3/WAV';
+  document.getElementById('iup').classList.remove('ok');
+  document.getElementById('iulbl').innerHTML='Mis imágenes<br><span style="font-size:11px">Opcional</span>';
+  document.querySelectorAll('.gt').forEach(g=>g.classList.remove('s','au'));
+  S.audioName=''; S.editMode=false;
+  document.getElementById('ebanner').classList.remove('on');
+  document.getElementById('btn2').disabled=true;
+  document.getElementById('bgen').disabled=false;
+  document.getElementById('bgen').textContent='🎬 Generar video';
+  if(S.pollTimer) clearInterval(S.pollTimer);
+  if(S.simTimer) clearTimeout(S.simTimer);
+  document.getElementById('snav').style.display='flex';
+  go(1);
+}
+
+loadMem();
 </script>
-<!-- Modal token -->
-<div id="token-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:16px">
-  <div style="background:white;border-radius:14px;padding:24px;max-width:440px;width:100%">
-    <h3 style="font-size:16px;font-weight:600;margin-bottom:6px">Tu GitHub Token</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">Ingresa tu Personal Access Token para conectar con GitHub Actions. Se guarda solo en tu navegador, nunca en el servidor.</p>
-    <input type="password" id="token-input" placeholder="github_pat_..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #e2e0d8;border-radius:10px;font-size:14px;margin-bottom:12px">
-    <div style="display:flex;gap:8px">
-      <button onclick="document.getElementById('token-modal').style.display='none'" style="flex:1;padding:10px;border:1px solid #e2e0d8;border-radius:10px;background:white;cursor:pointer;font-size:14px">Cancelar</button>
-      <button onclick="guardarToken()" style="flex:2;padding:10px;border:none;border-radius:10px;background:#7F77DD;color:white;cursor:pointer;font-size:14px;font-weight:500">Guardar y continuar</button>
-    </div>
-    <p style="font-size:11px;color:#999;margin-top:10px;text-align:center">El token se guarda en localStorage de tu navegador</p>
-  </div>
-</div>
-
 </body>
 </html>
