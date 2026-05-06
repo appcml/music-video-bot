@@ -118,7 +118,15 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          lfs: true
+
+      - name: 🖼️ Verificar imágenes del usuario
+        run: |
+          echo "=== Imágenes en mis_imagenes/ ==="
+          ls -la mis_imagenes/ || echo "Carpeta vacía o no existe"
+          echo "=== Audio en mis_imagenes/ ==="
+          find mis_imagenes/ -name "*.mp3" -o -name "*.wav" -o -name "*.m4a" 2>/dev/null || echo "Sin audio"
 
       - name: 🐍 Python 3.11
         uses: actions/setup-python@v5
@@ -138,26 +146,44 @@ jobs:
           sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       - name: ⚙️ Crear config_cancion.json
+        env:
+          SONG_NAME:    ${{ github.event.inputs.song_name }}
+          ARTIST:       ${{ github.event.inputs.artist }}
+          SONG_DESC:    ${{ github.event.inputs.song_desc }}
+          VIDEO_DESC:   ${{ github.event.inputs.video_desc }}
+          GENRES:       ${{ github.event.inputs.genres }}
+          PALETTE:      ${{ github.event.inputs.palette }}
+          TRANSITION:   ${{ github.event.inputs.transition }}
+          TEXT_STYLE:   ${{ github.event.inputs.text_style }}
+          EFFECT:       ${{ github.event.inputs.effect }}
+          RHYTHM:       ${{ github.event.inputs.rhythm }}
+          DURATION:     ${{ github.event.inputs.duration }}
+          YT_REF:       ${{ github.event.inputs.yt_ref }}
+          SPOTIFY_LINK: ${{ github.event.inputs.spotify_link }}
+          AUDIO_NAME:   ${{ github.event.inputs.audio_name }}
         run: |
-          cat > config_cancion.json << 'EOF'
-          {
-            "song_name":   "${{ github.event.inputs.song_name }}",
-            "artist":      "${{ github.event.inputs.artist }}",
-            "song_desc":   "${{ github.event.inputs.song_desc }}",
-            "video_desc":  "${{ github.event.inputs.video_desc }}",
-            "genres":      "${{ github.event.inputs.genres }}",
-            "palette":     "${{ github.event.inputs.palette }}",
-            "transition":  "${{ github.event.inputs.transition }}",
-            "text_style":  "${{ github.event.inputs.text_style }}",
-            "effect":      "${{ github.event.inputs.effect }}",
-            "rhythm":      "${{ github.event.inputs.rhythm }}",
-            "duration":    "${{ github.event.inputs.duration }}",
-            "yt_ref":      "${{ github.event.inputs.yt_ref }}",
-            "spotify_link":"${{ github.event.inputs.spotify_link }}",
-            "audio_name":  "${{ github.event.inputs.audio_name }}",
-            "timestamp":   "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          python3 -c "
+          import json, os
+          config = {
+            'song_name':    os.environ.get('SONG_NAME',''),
+            'artist':       os.environ.get('ARTIST',''),
+            'song_desc':    os.environ.get('SONG_DESC',''),
+            'video_desc':   os.environ.get('VIDEO_DESC',''),
+            'genres':       os.environ.get('GENRES','Pop'),
+            'palette':      os.environ.get('PALETTE','Oscuro'),
+            'transition':   os.environ.get('TRANSITION','Ken Burns'),
+            'text_style':   os.environ.get('TEXT_STYLE','Nombre + artista'),
+            'effect':       os.environ.get('EFFECT','Sin filtro'),
+            'rhythm':       os.environ.get('RHYTHM','3'),
+            'duration':     os.environ.get('DURATION','60 seg (Reel estándar)'),
+            'yt_ref':       os.environ.get('YT_REF','auto'),
+            'spotify_link': os.environ.get('SPOTIFY_LINK',''),
+            'audio_name':   os.environ.get('AUDIO_NAME',''),
           }
-          EOF
+          with open('config_cancion.json','w') as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+          print('Config creado:', json.dumps(config, ensure_ascii=False)[:200])
+          "
 
       - name: 🎬 Generar video musical
         env:
