@@ -385,22 +385,18 @@ function saveTok(){
 }
 
 // ── Generar ───────────────────────────────────────────────
+// ── Generar ───────────────────────────────────────────────
 async function generar(){
-  if(!localStorage.getItem('mvbot_tok')){
-    document.getElementById('tokmod').classList.add('on');
-    return;
-  }
   await disparar();
 }
 
 async function disparar(){
-  const tok=localStorage.getItem('mvbot_tok');
   const song=v('sn'), artist=v('ar');
   saveMem();
   const btn=document.getElementById('bgen');
   btn.disabled=true; btn.textContent='⏳ Enviando...';
 
-  const payload={ref:'main',inputs:{
+  const payload={inputs:{
     song_name:song, artist:artist,
     song_desc:v('sd'), video_desc:v('vd')||'',
     genres:getG().join(',')||'Pop',
@@ -413,13 +409,14 @@ async function disparar(){
   }};
 
   try{
-    const res=await fetch('https://api.github.com/repos/appcml/music-video-bot/actions/workflows/music_video.yml/dispatches',{
+    // Llamar al Cloudflare Worker — sin token en el frontend
+    const res=await fetch('https://music-video-trigger.cmarinanlincopan.workers.dev',{
       method:'POST',
-      headers:{'Authorization':`Bearer ${tok}`,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload),
     });
-    if(res.status===204){
-      // Mostrar pantalla de progreso
+    const data=await res.json();
+    if(data.ok){
       document.getElementById('snav').style.display='none';
       document.getElementById('ebanner').classList.remove('on');
       document.querySelectorAll('.pan').forEach(p=>p.classList.remove('on'));
@@ -429,19 +426,16 @@ async function disparar(){
       S.startTime=Date.now();
       markPD(0,'d');
       iniciarSim();
-      setTimeout(()=>iniciarPoll(tok,song),10000);
-    } else if(res.status===401){
-      localStorage.removeItem('mvbot_tok');
-      btn.disabled=false; btn.textContent='🎬 Generar video';
-      alert('Token inválido. Ingresa uno nuevo.');
-      document.getElementById('tokmod').classList.add('on');
+      // Polling con token si el usuario lo tiene guardado
+      const tok=localStorage.getItem('mvbot_tok');
+      if(tok) setTimeout(()=>iniciarPoll(tok,song),10000);
     } else {
       btn.disabled=false; btn.textContent='🎬 Generar video';
-      alert(`Error ${res.status}. Verifica permisos del token.`);
+      alert(`Error: ${data.error||'No se pudo disparar el workflow'}`);
     }
   }catch(e){
     btn.disabled=false; btn.textContent='🎬 Generar video';
-    alert('Error de conexión.');
+    alert('Error de conexión con el servidor.');
   }
 }
 
