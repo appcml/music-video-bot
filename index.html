@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Video Bot — Generador de Videos</title>
+<style>
+  :root {
+    --purple: #7F77DD;
+    --purple-light: #EEEDFE;
+    --purple-dark: #3C3489;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --gray-border: #e2e0d8;
+    --gray-bg: #f8f7f4;
+    --text: #1a1a1a;
+    --text-muted: #666460;
+    --text-hint: #999794;
+    --success: #1D9E75;
+    --success-bg: #E1F5EE;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+    color: var(--text);
+  }
+  .container {
+    width: 100%;
+    max-width: 560px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header-icon {
+    width: 52px;
+    height: 52px;
+    background: var(--purple-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 24px;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: var(--text-muted); }
+
+  /* Memoria del último proyecto */
+  .memory-card {
+    background: white;
+    border: 1.5px solid var(--purple);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .memory-card.visible { display: block; }
+  .memory-title { font-size: 12px; color: var(--purple-dark); font-weight: 600; margin-bottom: 4px; }
+  .memory-song { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+  .memory-actions { display: flex; gap: 8px; }
+  .btn-memory {
+    flex: 1;
+    padding: 7px;
+    border-radius: 8px;
+    border: 1px solid var(--gray-border);
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text);
+    transition: all .15s;
+  }
+  .btn-memory:hover { background: var(--gray-bg); }
+  .btn-memory.primary { background: var(--purple); color: white; border-color: var(--purple); }
+  .btn-memory.primary:hover { background: var(--purple-dark); }
+
+  /* Card principal */
+  .card {
+    background: white;
+    border: 0.5px solid var(--gray-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  /* Steps indicator */
+  .steps-nav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 24px;
+  }
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+  .step-item:last-child { flex: 0; }
+  .step-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gray-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-hint);
+    flex-shrink: 0;
+    transition: all .2s;
+  }
+  .step-circle.active { border-color: var(--purple); background: var(--purple); color: white; }
+  .step-circle.done { border-color: var(--teal); background: var(--teal); color: white; }
+  .step-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .step-label.active { color: var(--purple-dark); font-weight: 500; }
+  .step-line { flex: 1; height: 1px; background: var(--gray-border); margin: 0 8px; transition: background .2s; }
+  .step-line.done { background: var(--teal); }
+
+  /* Panel de pasos */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  /* Form elements */
+  label.field-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .field-group { margin-bottom: 14px; }
+  input[type=text], input[type=url], textarea, select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--gray-border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    color: var(--text);
+    background: white;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--purple);
+  }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Upload boxes */
+  .upload-area {
+    border: 1.5px dashed var(--gray-border);
+    border-radius: var(--radius);
+    padding: 18px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+  }
+  .upload-area:hover { border-color: var(--purple); background: var(--purple-light); }
+  .upload-area.uploaded { border-color: var(--success); background: var(--success-bg); border-style: solid; }
+  .upload-area input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 22px; margin-bottom: 4px; }
+  .upload-label { font-size: 13px; color: var(--text-muted); }
+  .upload-area.uploaded .upload-label { color: var(--success); font-weight: 500; }
+
+  /* Genre tags */
+  .genre-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .genre-tag {
+    padding: 5px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--gray-border);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    background: white;
+    transition: all .15s;
+    user-select: none;
+  }
+  .genre-tag:hover { border-color: var(--purple); color: var(--purple-dark); }
+  .genre-tag.sel { background: var(--purple); border-color: var(--purple); color: white; }
+  .genre-tag.auto { background: var(--teal-light); border-color: var(--teal); color: #085041; }
+
+  /* Pills */
+  .pills-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill {
+    padding: 6px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--gray-border);
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-muted);
+    background: white;
+    transition: all .15s;
+    user-select: none;
+  }
+  .pill:hover { border-color: var(--purple); }
+  .pill.sel { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+
+  /* Rhythm slider */
+  .rhythm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rhythm-row input[type=range] {
+    flex: 1;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+  .rhythm-val {
+    min-width: 20px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--purple-dark);
+  }
+
+  /* YouTube reference cards */
+  .yt-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--gray-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: all .15s;
+    background: white;
+  }
+  .yt-card:hover { border-color: var(--purple); background: var(--purple-light); }
+  .yt-card.sel { border-color: var(--purple); background: var(--purple-light); border-width: 1.5px; }
+  .yt-thumb {
+    width: 76px;
+    height: 44px;
+    background: var(--gray-bg);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 20px;
+    color: var(--text-hint);
+    overflow: hidden;
+  }
+  .yt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .yt-info { flex: 1; min-width: 0; }
+  .yt-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .yt-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+  .yt-link { font-size: 11px; color: #185FA5; text-decoration: none; }
+  .yt-link:hover { text-decoration: underline; }
+
+  /* Section title */
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .section-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 8px; margin-top: 20px; }
+  .btn {
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-border);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: white;
+    color: var(--text);
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--gray-bg); }
+  .btn.primary {
+    background: var(--purple);
+    color: white;
+    border-color: var(--purple);
+    flex: 2;
+  }
+  .btn.primary:hover { background: var(--purple-dark); }
+  .btn.secondary { flex: 1; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Success screen */
+  .success-screen {
+    text-align: center;
+    padding: 12px 0;
+  }
+  .success-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--success-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 26px;
+  }
+  .success-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .success-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+  .progress-steps { text-align: left; margin-bottom: 20px; }
+  .progress-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-border);
+    font-size: 13px;
+  }
+  .progress-step:last-child { border-bottom: none; }
+  .ps-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gray-border);
+    flex-shrink: 0;
+  }
+  .ps-dot.done { background: var(--success); }
+  .ps-dot.active { background: var(--purple); }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 500; margin-left: 6px; }
+  .badge-success { background: var(--success-bg); color: #085041; }
+  .badge-purple { background: var(--purple-light); color: var(--purple-dark); }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--gray-border); margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-icon">🎬</div>
+    <h1>Music Video Bot</h1>
+    <p class="subtitle">Crea videos verticales para Spotify y redes sociales</p>
+  </div>
+
+  <!-- Memoria del último proyecto -->
+  <div class="memory-card" id="memory-card">
+    <div class="memory-title">🕐 Último proyecto</div>
+    <div class="memory-song" id="memory-song-name">—</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px" id="memory-song-date">—</div>
+    <div class="memory-actions">
+      <button class="btn-memory" onclick="retomar()">✏️ Rehacer con cambios</button>
+      <button class="btn-memory primary" onclick="nuevoProyecto()">+ Nuevo proyecto</button>
+    </div>
+  </div>
+
+  <div class="card" id="main-card">
+
+    <!-- Steps nav -->
+    <div class="steps-nav">
+      <div class="step-item">
+        <div class="step-circle active" id="sc1">1</div>
+        <span class="step-label active" id="sl1">Canción</span>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-item">
+        <div class="step-circle" id="sc2">2</div>
+        <span class="step-label" id="sl2">Estilo</span>
+      </div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-item">
+        <div class="step-circle" id="sc3">3</div>
+        <span class="step-label" id="sl3">Referencias</span>
+      </div>
+    </div>
+
+    <!-- PASO 1 -->
+    <div class="step-panel active" id="panel1">
+      <div class="section-title">Información de la canción</div>
+      <div class="section-sub">Sube tu archivo de audio e ingresa los datos básicos.</div>
+
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="upload-area" id="audio-upload">
+          <input type="file" accept=".mp3,.wav,.m4a,.flac" onchange="onAudioUpload(this)">
+          <div class="upload-icon">🎵</div>
+          <div class="upload-label" id="audio-label">Subir audio<br><span style="font-size:11px">MP3 / WAV / M4A</span></div>
+        </div>
+        <div class="upload-area" id="imgs-upload">
+          <input type="file" accept="image/*" multiple onchange="onImgsUpload(this)">
+          <div class="upload-icon">🖼️</div>
+          <div class="upload-label" id="imgs-label">Mis imágenes<br><span style="font-size:11px">Opcional — varias</span></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field-group">
+          <label class="field-label">Nombre de la canción *</label>
+          <input type="text" id="song-name" placeholder="ej. Noche sin ti" oninput="onSongInput()">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Artista *</label>
+          <input type="text" id="artist-name" placeholder="Tu nombre artístico">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Link de Spotify <span style="color:var(--text-hint);font-weight:400">(opcional — para obtener letra automática)</span></label>
+        <input type="url" id="spotify-link" placeholder="https://open.spotify.com/track/...">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">¿De qué trata la canción? *</label>
+        <textarea id="song-desc" placeholder="ej. Una canción sobre el desamor en la ciudad, melancolía nocturna, recuerdos de alguien que se fue..." oninput="onSongInput()"></textarea>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Género musical <span style="color:var(--text-hint);font-weight:400">(detectado automáticamente — puedes cambiar)</span></label>
+        <div class="genre-row" id="genre-row">
+          <span class="genre-tag" onclick="toggleGenre(this)">Pop</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">R&B</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Urbano</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Electrónica</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Balada</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Indie</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Hip-hop</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Reggaeton</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Latin</span>
+          <span class="genre-tag" onclick="toggleGenre(this)">Rock</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn primary" onclick="goStep(2)" id="btn-step2" disabled>Continuar →</button>
+      </div>
+    </div>
+
+    <!-- PASO 2 -->
+    <div class="step-panel" id="panel2">
+      <div class="section-title">Estilo y efectos del video</div>
+      <div class="section-sub">Personaliza cómo se verá tu video. Cada opción afecta el resultado final.</div>
+
+      <div class="field-group">
+        <label class="field-label">Paleta de colores</label>
+        <div class="pills-row">
+          <span class="pill sel" onclick="selPill(this,'palette')">🌑 Oscuro</span>
+          <span class="pill" onclick="selPill(this,'palette')">☀️ Luminoso</span>
+          <span class="pill" onclick="selPill(this,'palette')">⚡ Neon</span>
+          <span class="pill" onclick="selPill(this,'palette')">🌿 Natural</span>
+          <span class="pill" onclick="selPill(this,'palette')">📷 Vintage</span>
+          <span class="pill" onclick="selPill(this,'palette')">🎨 Pastel</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Transición entre imágenes</label>
+        <div class="pills-row">
+          <span class="pill sel" onclick="selPill(this,'trans')">Ken Burns (zoom)</span>
+          <span class="pill" onclick="selPill(this,'trans')">Fade suave</span>
+          <span class="pill" onclick="selPill(this,'trans')">Slide horizontal</span>
+          <span class="pill" onclick="selPill(this,'trans')">Slide vertical</span>
+          <span class="pill" onclick="selPill(this,'trans')">Mezcla aleatoria</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Texto en pantalla</label>
+        <div class="pills-row">
+          <span class="pill sel" onclick="selPill(this,'text-style')">Nombre + artista</span>
+          <span class="pill" onclick="selPill(this,'text-style')">Letra sincronizada</span>
+          <span class="pill" onclick="selPill(this,'text-style')">Solo al inicio</span>
+          <span class="pill" onclick="selPill(this,'text-style')">Sin texto</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Efecto de imagen</label>
+        <div class="pills-row">
+          <span class="pill sel" onclick="selPill(this,'effect')">Sin filtro</span>
+          <span class="pill" onclick="selPill(this,'effect')">Desaturado (B&N)</span>
+          <span class="pill" onclick="selPill(this,'effect')">Cálido</span>
+          <span class="pill" onclick="selPill(this,'effect')">Frío</span>
+          <span class="pill" onclick="selPill(this,'effect')">Alto contraste</span>
+          <span class="pill" onclick="selPill(this,'effect')">Desenfoque suave</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Ritmo visual — velocidad de cambio de imagen</label>
+        <div class="rhythm-row">
+          <span style="font-size:12px;color:var(--text-muted)">Lento</span>
+          <input type="range" min="1" max="5" value="3" id="rhythm" step="1" oninput="document.getElementById('rv').textContent=this.value">
+          <span style="font-size:12px;color:var(--text-muted)">Rápido</span>
+          <span class="rhythm-val" id="rv">3</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Duración del video</label>
+        <div class="pills-row">
+          <span class="pill" onclick="selPill(this,'duration')">30 seg (Reel corto)</span>
+          <span class="pill sel" onclick="selPill(this,'duration')">60 seg (Reel estándar)</span>
+          <span class="pill" onclick="selPill(this,'duration')">90 seg</span>
+          <span class="pill" onclick="selPill(this,'duration')">Duración completa</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Descripción adicional del video <span style="color:var(--text-hint);font-weight:400">(opcional)</span></label>
+        <textarea id="video-desc" placeholder="ej. Quiero imágenes de ciudad de noche, tono melancólico, sin texto sobre las imágenes..."></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn secondary" onclick="goStep(1)">← Atrás</button>
+        <button class="btn primary" onclick="goStep(3)">Ver referencias →</button>
+      </div>
+    </div>
+
+    <!-- PASO 3 -->
+    <div class="step-panel" id="panel3">
+      <div class="section-title">Referencias de estilo</div>
+      <div class="section-sub">Revisa estos ejemplos en YouTube y elige el que más se parezca a lo que quieres. También puedes saltar este paso.</div>
+
+      <div id="yt-recs">
+
+        <div class="yt-card" id="yt1" onclick="selYT('yt1','Lyric video minimalista')">
+          <div class="yt-thumb">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">Opción 1 — Lyric video minimalista</div>
+            <div class="yt-desc">Texto animado sobre imágenes suaves. Ideal para baladas, R&B e indie.</div>
+            <a class="yt-link" href="https://www.youtube.com/results?search_query=aesthetic+lyric+video+vertical+spotify" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
+          </div>
+        </div>
+
+        <div class="yt-card" id="yt2" onclick="selYT('yt2','Visualizer de audio animado')">
+          <div class="yt-thumb">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">Opción 2 — Visualizer de audio</div>
+            <div class="yt-desc">Ondas de audio animadas sobre fondo oscuro o imágenes. Para urbano y electrónica.</div>
+            <a class="yt-link" href="https://www.youtube.com/results?search_query=music+visualizer+vertical+video+reel" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
+          </div>
+        </div>
+
+        <div class="yt-card" id="yt3" onclick="selYT('yt3','Cinemático con Ken Burns')">
+          <div class="yt-thumb">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">Opción 3 — Cinemático con imágenes</div>
+            <div class="yt-desc">Fotos en movimiento suave con superposición del título. Estilo cinematográfico.</div>
+            <a class="yt-link" href="https://www.youtube.com/results?search_query=cinematic+slideshow+music+video+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
+          </div>
+        </div>
+
+        <div class="yt-card" id="yt4" onclick="selYT('yt4','Color grading oscuro')">
+          <div class="yt-thumb">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">Opción 4 — Color grading oscuro</div>
+            <div class="yt-desc">Imágenes con tonos oscuros y contraste alto. Para trap, dark pop y ambient.</div>
+            <a class="yt-link" href="https://www.youtube.com/results?search_query=dark+aesthetic+music+video+vertical+reels" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
+          </div>
+        </div>
+
+        <div class="yt-card" id="yt5" onclick="selYT('yt5','Neon y luces urbanas')">
+          <div class="yt-thumb">▶</div>
+          <div class="yt-info">
+            <div class="yt-title">Opción 5 — Neon y luces urbanas</div>
+            <div class="yt-desc">Imágenes de ciudad nocturna con efectos de luz de colores. Urbano y electrónica.</div>
+            <a class="yt-link" href="https://www.youtube.com/results?search_query=neon+city+music+video+aesthetic+vertical" target="_blank" onclick="event.stopPropagation()">Ver ejemplos en YouTube ↗</a>
+          </div>
+        </div>
+
+        <div class="yt-card" id="yt0" onclick="selYT('yt0','auto')">
+          <div class="yt-thumb" style="font-size:16px">🤖</div>
+          <div class="yt-info">
+            <div class="yt-title">Ninguna — dejar al bot decidir</div>
+            <div class="yt-desc">El bot elige el estilo automáticamente según el género y la descripción de tu canción.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button class="btn secondary" onclick="goStep(2)">← Atrás</button>
+        <button class="btn primary" onclick="submitForm()" id="btn-submit">🎬 Generar video</button>
+      </div>
+    </div>
+
+    <!-- PANTALLA DE ÉXITO -->
+    <div class="step-panel" id="panel-success">
+      <div class="success-screen">
+        <div class="success-icon">✅</div>
+        <div class="success-title">¡Video en producción!</div>
+        <div class="success-sub">GitHub Actions está generando tu video. Cuando termine lo encontrarás en la carpeta <code style="background:var(--gray-bg);padding:1px 5px;border-radius:4px">output/</code> del repositorio.</div>
+
+        <div class="progress-steps">
+          <div class="progress-step"><div class="ps-dot done"></div>Configuración enviada</div>
+          <div class="progress-step"><div class="ps-dot active"></div>Buscando letra de la canción</div>
+          <div class="progress-step"><div class="ps-dot"></div>Generando imágenes con IA</div>
+          <div class="progress-step"><div class="ps-dot"></div>Ensamblando video 9:16</div>
+          <div class="progress-step"><div class="ps-dot"></div>Guardando en output/</div>
+        </div>
+
+        <a href="https://github.com/appcml/music-video-bot/actions" target="_blank" style="display:inline-block;padding:9px 18px;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:var(--radius);font-size:13px;color:var(--text);text-decoration:none;margin-bottom:10px">Ver progreso en GitHub Actions ↗</a>
+
+        <div style="margin-top:8px">
+          <button class="btn primary" onclick="resetForm()" style="width:100%">+ Crear otro video</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Estado del formulario ────────────────────────────────
+const state = {
+  step: 1,
+  audioFile: null,
+  audioFileName: '',
+  imageFiles: [],
+  songName: '',
+  artistName: '',
+  spotifyLink: '',
+  songDesc: '',
+  videoDesc: '',
+  genres: [],
+  palette: 'Oscuro',
+  transition: 'Ken Burns (zoom)',
+  textStyle: 'Nombre + artista',
+  effect: 'Sin filtro',
+  rhythm: 3,
+  duration: '60 seg (Reel estándar)',
+  ytRef: 'auto',
+  ytRefName: '',
+};
+
+// ── Memoria local ────────────────────────────────────────
+function loadMemory() {
+  const mem = localStorage.getItem('mvbot_last');
+  if (!mem) return;
+  try {
+    const m = JSON.parse(mem);
+    document.getElementById('memory-card').classList.add('visible');
+    document.getElementById('memory-song-name').textContent = `"${m.songName}" — ${m.artistName}`;
+    document.getElementById('memory-song-date').textContent = `Generado el ${m.date}`;
+    window._lastProject = m;
+  } catch(e) {}
+}
+
+function saveMemory(data) {
+  const mem = {
+    songName: data.songName,
+    artistName: data.artistName,
+    genres: data.genres,
+    palette: data.palette,
+    date: new Date().toLocaleDateString('es-ES', {day:'numeric',month:'long',year:'numeric'}),
+  };
+  localStorage.setItem('mvbot_last', JSON.stringify(mem));
+}
+
+function retomar() {
+  const m = window._lastProject;
+  if (!m) return;
+  document.getElementById('memory-card').classList.remove('visible');
+  document.getElementById('song-name').value = m.songName || '';
+  document.getElementById('artist-name').value = m.artistName || '';
+  state.songName = m.songName || '';
+  state.artistName = m.artistName || '';
+  checkStep1();
+  goStep(1);
+}
+
+function nuevoProyecto() {
+  document.getElementById('memory-card').classList.remove('visible');
+  resetForm();
+}
+
+// ── Navegación de pasos ──────────────────────────────────
+function goStep(n) {
+  state.step = n;
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('panel'+i).classList.remove('active');
+    const sc = document.getElementById('sc'+i);
+    const sl = document.getElementById('sl'+i);
+    sc.classList.remove('active','done');
+    sl.classList.remove('active');
+    if (i < n) { sc.classList.add('done'); sc.textContent = '✓'; }
+    else if (i === n) { sc.classList.add('active'); sc.textContent = i; sl.classList.add('active'); }
+    else { sc.textContent = i; }
+  }
+  for (let i = 1; i <= 2; i++) {
+    document.getElementById('line'+i).classList.toggle('done', i < n);
+  }
+  document.getElementById('panel'+n).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── Paso 1 ───────────────────────────────────────────────
+function onAudioUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  state.audioFile = file;
+  state.audioFileName = file.name;
+  const area = document.getElementById('audio-upload');
+  area.classList.add('uploaded');
+  document.getElementById('audio-label').innerHTML = `${file.name}<br><span style="font-size:11px">${(file.size/1024/1024).toFixed(1)} MB</span>`;
+  checkStep1();
+}
+
+function onImgsUpload(input) {
+  const files = Array.from(input.files);
+  state.imageFiles = files;
+  const area = document.getElementById('imgs-upload');
+  area.classList.add('uploaded');
+  document.getElementById('imgs-label').innerHTML = `${files.length} imagen${files.length>1?'es':''}<br><span style="font-size:11px">listas para usar</span>`;
+}
+
+function onSongInput() {
+  state.songName = document.getElementById('song-name').value.trim();
+  state.songDesc = document.getElementById('song-desc').value.trim();
+  detectGenre();
+  checkStep1();
+}
+
+function checkStep1() {
+  const ok = state.audioFileName && state.songName && document.getElementById('artist-name').value.trim() && state.songDesc;
+  document.getElementById('btn-step2').disabled = !ok;
+}
+
+function detectGenre() {
+  const desc = (document.getElementById('song-desc').value + ' ' + document.getElementById('song-name').value).toLowerCase();
+  const map = {
+    'Balada': ['amor','desamor','melanc','triste','llor','corazón','extraño','perdiste','noche','solo','soledad'],
+    'R&B': ['soul','suave','sensual','cuerpo','piel','ritmo lento'],
+    'Urbano': ['calle','barrio','flow','trap','perreo','dembow'],
+    'Reggaeton': ['perreo','dembow','twerk','reggaeton'],
+    'Electrónica': ['electr','beat','synth','drop','dj','club','baile'],
+    'Hip-hop': ['rap','rima','verso','flow','freestyle','hip'],
+    'Indie': ['indie','alternativ','folk','acustic','guitarra'],
+    'Pop': ['pop','pegajosa','radio','hit','chorus'],
+  };
+  document.querySelectorAll('.genre-tag').forEach(t => t.classList.remove('auto'));
+  for (const [genre, keywords] of Object.entries(map)) {
+    if (keywords.some(k => desc.includes(k))) {
+      document.querySelectorAll('.genre-tag').forEach(t => {
+        if (t.textContent === genre) t.classList.add('auto');
+      });
+    }
+  }
+}
+
+function toggleGenre(el) {
+  el.classList.toggle('sel');
+  el.classList.remove('auto');
+  state.genres = Array.from(document.querySelectorAll('.genre-tag.sel, .genre-tag.auto'))
+    .map(t => t.textContent);
+}
+
+// ── Paso 2 ───────────────────────────────────────────────
+function selPill(el, group) {
+  el.closest('.pills-row').querySelectorAll('.pill').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel');
+  const text = el.textContent.replace(/[🌑☀️⚡🌿📷🎨]/u,'').trim();
+  if (group === 'palette') state.palette = text;
+  if (group === 'trans') state.transition = text;
+  if (group === 'text-style') state.textStyle = text;
+  if (group === 'effect') state.effect = text;
+  if (group === 'duration') state.duration = text;
+}
+
+// ── Paso 3 ───────────────────────────────────────────────
+function selYT(id, name) {
+  document.querySelectorAll('.yt-card').forEach(c => c.classList.remove('sel'));
+  document.getElementById(id).classList.add('sel');
+  state.ytRef = id;
+  state.ytRefName = name;
+  const btn = document.getElementById('btn-submit');
+  btn.textContent = name === 'auto' ? '🎬 Generar video (estilo automático)' : `🎬 Generar — estilo "${name}"`;
+}
+
+// ── Submit ───────────────────────────────────────────────
+function submitForm() {
+  // Recopilar estado final
+  state.songName    = document.getElementById('song-name').value.trim();
+  state.artistName  = document.getElementById('artist-name').value.trim();
+  state.spotifyLink = document.getElementById('spotify-link').value.trim();
+  state.songDesc    = document.getElementById('song-desc').value.trim();
+  state.videoDesc   = document.getElementById('video-desc').value.trim();
+  state.rhythm      = document.getElementById('rhythm').value;
+  state.genres      = Array.from(document.querySelectorAll('.genre-tag.sel, .genre-tag.auto')).map(t => t.textContent);
+
+  // Guardar en memoria local
+  saveMemory(state);
+
+  // Construir config para GitHub Actions
+  const config = {
+    song_name:     state.songName,
+    artist:        state.artistName,
+    spotify_link:  state.spotifyLink,
+    song_desc:     state.songDesc,
+    video_desc:    state.videoDesc,
+    genres:        state.genres.join(','),
+    palette:       state.palette,
+    transition:    state.transition,
+    text_style:    state.textStyle,
+    effect:        state.effect,
+    rhythm:        state.rhythm,
+    duration:      state.duration,
+    yt_ref:        state.ytRefName || 'auto',
+    has_audio:     !!state.audioFileName,
+    audio_name:    state.audioFileName,
+    has_images:    state.imageFiles.length > 0,
+    image_count:   state.imageFiles.length,
+    timestamp:     new Date().toISOString(),
+  };
+
+  // Guardar config.json en localStorage (el workflow lo leerá del repo)
+  localStorage.setItem('mvbot_pending', JSON.stringify(config));
+
+  // Ir a pantalla de éxito
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('panel'+i).classList.remove('active');
+  }
+  document.getElementById('panel-success').classList.add('active');
+
+  // Actualizar steps como completados
+  ['sc1','sc2','sc3'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.textContent = '✓';
+  });
+  ['line1','line2'].forEach(id => document.getElementById(id).classList.add('done'));
+
+  console.log('Config del video:', JSON.stringify(config, null, 2));
+}
+
+function resetForm() {
+  location.reload();
+}
+
+// ── Init ─────────────────────────────────────────────────
+loadMemory();
+</script>
+</body>
+</html>
