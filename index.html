@@ -791,7 +791,18 @@ function selYT(id, name) {
 }
 
 // ── Submit ───────────────────────────────────────────────
-function submitForm() {
+async function submitForm() {
+  // Obtener token guardado localmente
+  const token = localStorage.getItem('mvbot_gh_token');
+  if (!token) {
+    document.getElementById('token-modal').style.display = 'flex';
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando a GitHub Actions...';
+
   // Recopilar estado final
   state.songName    = document.getElementById('song-name').value.trim();
   state.artistName  = document.getElementById('artist-name').value.trim();
@@ -801,41 +812,79 @@ function submitForm() {
   state.rhythm      = document.getElementById('rhythm').value;
   state.genres      = Array.from(document.querySelectorAll('.genre-tag.sel, .genre-tag.auto')).map(t => t.textContent);
 
-  // Guardar en memoria local
   saveMemory(state);
 
-  // Construir config para GitHub Actions
-  const config = {
-    song_name:     state.songName,
-    artist:        state.artistName,
-    spotify_link:  state.spotifyLink,
-    song_desc:     state.songDesc,
-    video_desc:    state.videoDesc,
-    genres:        state.genres.join(','),
-    palette:       state.palette,
-    transition:    state.transition,
-    text_style:    state.textStyle,
-    effect:        state.effect,
-    rhythm:        state.rhythm,
-    duration:      state.duration,
-    yt_ref:        state.ytRefName || 'auto',
-    has_audio:     !!state.audioFileName,
-    audio_name:    state.audioFileName,
-    has_images:    state.imageFiles.length > 0,
-    image_count:   state.imageFiles.length,
-    timestamp:     new Date().toISOString(),
+  const payload = {
+    ref: 'main',
+    inputs: {
+      song_name:    state.songName,
+      artist:       state.artistName,
+      song_desc:    state.songDesc,
+      video_desc:   state.videoDesc || '',
+      genres:       state.genres.join(',') || 'Pop',
+      palette:      state.palette || 'Oscuro',
+      transition:   state.transition || 'Ken Burns (zoom)',
+      text_style:   state.textStyle || 'Nombre + artista',
+      effect:       state.effect || 'Sin filtro',
+      rhythm:       String(state.rhythm || '3'),
+      duration:     state.duration || '60 seg (Reel estándar)',
+      yt_ref:       state.ytRefName || 'auto',
+      spotify_link: state.spotifyLink || '',
+      audio_name:   state.audioFileName || '',
+    }
   };
 
-  // Guardar config.json en localStorage (el workflow lo leerá del repo)
-  localStorage.setItem('mvbot_pending', JSON.stringify(config));
+  try {
+    const res = await fetch(
+      'https://api.github.com/repos/appcml/music-video-bot/actions/workflows/music_video.yml/dispatches',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
-  // Ir a pantalla de éxito
+    if (res.status === 204) {
+      mostrarExito();
+    } else if (res.status === 401) {
+      localStorage.removeItem('mvbot_gh_token');
+      btn.disabled = false;
+      btn.textContent = '🎬 Generar video';
+      alert('Token inválido o expirado. Ingresa tu token nuevamente.');
+      document.getElementById('token-modal').style.display = 'flex';
+    } else {
+      const err = await res.text();
+      console.error('GitHub API error:', res.status, err);
+      btn.disabled = false;
+      btn.textContent = '❌ Error — intenta de nuevo';
+      alert(`Error ${res.status}. Verifica que el token tenga permisos de Actions.`);
+    }
+  } catch(e) {
+    console.error('Fetch error:', e);
+    btn.disabled = false;
+    btn.textContent = '❌ Error de conexión';
+    alert('Error de conexión. Intenta de nuevo.');
+  }
+}
+
+function guardarToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t) return;
+  localStorage.setItem('mvbot_gh_token', t);
+  document.getElementById('token-modal').style.display = 'none';
+  submitForm();
+}
+
+function mostrarExito() {
   for (let i = 1; i <= 3; i++) {
     document.getElementById('panel'+i).classList.remove('active');
   }
   document.getElementById('panel-success').classList.add('active');
-
-  // Actualizar steps como completados
   ['sc1','sc2','sc3'].forEach(id => {
     const el = document.getElementById(id);
     el.classList.remove('active');
@@ -843,9 +892,9 @@ function submitForm() {
     el.textContent = '✓';
   });
   ['line1','line2'].forEach(id => document.getElementById(id).classList.add('done'));
-
-  console.log('Config del video:', JSON.stringify(config, null, 2));
 }
+
+
 
 function resetForm() {
   location.reload();
@@ -854,5 +903,19 @@ function resetForm() {
 // ── Init ─────────────────────────────────────────────────
 loadMemory();
 </script>
+<!-- Modal token -->
+<div id="token-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:14px;padding:24px;max-width:440px;width:100%">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:6px">Tu GitHub Token</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;line-height:1.5">Ingresa tu Personal Access Token para conectar con GitHub Actions. Se guarda solo en tu navegador, nunca en el servidor.</p>
+    <input type="password" id="token-input" placeholder="github_pat_..." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #e2e0d8;border-radius:10px;font-size:14px;margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('token-modal').style.display='none'" style="flex:1;padding:10px;border:1px solid #e2e0d8;border-radius:10px;background:white;cursor:pointer;font-size:14px">Cancelar</button>
+      <button onclick="guardarToken()" style="flex:2;padding:10px;border:none;border-radius:10px;background:#7F77DD;color:white;cursor:pointer;font-size:14px;font-weight:500">Guardar y continuar</button>
+    </div>
+    <p style="font-size:11px;color:#999;margin-top:10px;text-align:center">El token se guarda en localStorage de tu navegador</p>
+  </div>
+</div>
+
 </body>
 </html>
