@@ -1,6 +1,18 @@
 {
   "proyectos": [
     {
+      "id": "91d88f83b5",
+      "song_name": "Dust and Destiny",
+      "artist": "cic",
+      "genres": "Electrónica,Balada,Country,Rock",
+      "palette": "Luminoso",
+      "transition": "Ken Burns",
+      "concepto": "Video cinematográfico para 'Dust and Destiny' con estética Luminoso que captura la esencia electrónica.",
+      "video_path": "output/Dust_and_Destiny_20260506_1834.mp4",
+      "fecha": "2026-05-06T18:35:00.837763",
+      "fecha_str": "06/05/2026 18:35"
+    },
+    {
       "id": "b5229dd87f",
       "song_name": "Dust and Destiny",
       "artist": "CIC",
@@ -14,15 +26,15 @@
     }
   ],
   "ultimo": {
-    "id": "b5229dd87f",
+    "id": "91d88f83b5",
     "song_name": "Dust and Destiny",
-    "artist": "CIC",
-    "genres": "Country,Rock",
-    "palette": "Vintage",
-    "transition": "Ken Burns (zoom)",
-    "concepto": "Video cinematográfico para 'Dust and Destiny' con estética Vintage que captura la esencia country.",
-    "video_path": "output/Dust_and_Destiny_20260506_1519.mp4",
-    "fecha": "2026-05-06T15:19:38.090350",
-    "fecha_str": "06/05/2026 15:19"
+    "artist": "cic",
+    "genres": "Electrónica,Balada,Country,Rock",
+    "palette": "Luminoso",
+    "transition": "Ken Burns",
+    "concepto": "Video cinematográfico para 'Dust and Destiny' con estética Luminoso que captura la esencia electrónica.",
+    "video_path": "output/Dust_and_Destiny_20260506_1834.mp4",
+    "fecha": "2026-05-06T18:35:00.837763",
+    "fecha_str": "06/05/2026 18:35"
   }
 }
