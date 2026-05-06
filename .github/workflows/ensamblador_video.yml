@@ -24,16 +24,6 @@ on:
           - Natural
           - Vintage
           - Pastel
-      transition:
-        description: 'Tipo de transición'
-        required: false
-        default: 'Ken Burns'
-        type: choice
-        options:
-          - Ken Burns
-          - Fade suave
-          - Slide horizontal
-          - Slide vertical
 
 jobs:
   generar-video:
@@ -82,12 +72,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      - name: 📦 Instalar dependencias
+      - name: 📦 Instalar dependencias (MoviePy 1.x estable)
         run: |
           pip install --upgrade pip
-          pip install moviepy pillow numpy
+          pip install "moviepy<2.0" pillow numpy
 
       - name: 🎞️ Instalar FFmpeg y fuentes
         run: |
@@ -99,7 +88,6 @@ jobs:
           SONG_NAME: ${{ github.event.inputs.song_name }}
           ARTIST: ${{ github.event.inputs.artist }}
           PALETTE: ${{ github.event.inputs.palette }}
-          TRANSITION: ${{ github.event.inputs.transition }}
         run: |
           python3 -c "
           import json, os
@@ -107,7 +95,6 @@ jobs:
             'song_name': os.environ.get('SONG_NAME','Video'),
             'artist': os.environ.get('ARTIST',''),
             'palette': os.environ.get('PALETTE','Oscuro'),
-            'transition': os.environ.get('TRANSITION','Ken Burns'),
           }
           with open('config_cancion.json','w') as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
