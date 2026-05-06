@@ -194,12 +194,17 @@ jobs:
           PEXELS_API_KEY:     ${{ secrets.PEXELS_API_KEY }}
         run: python music_video_bot.py
 
-      - name: 💾 Guardar video y memoria (git push)
+      - name: 💾 Guardar video y limpiar archivos temporales
         if: always()
         run: |
           git config user.name  "Music Video Bot"
           git config user.email "bot@musicvideobot.com"
-          git add output/ proyectos/proyectos.json config_cancion.json || true
+
+          # Limpiar imágenes y audio subidos por el usuario
+          # (mantener solo .gitkeep para que la carpeta exista)
+          find mis_imagenes/ -type f ! -name '.gitkeep' -delete || true
+
+          git add output/ proyectos/proyectos.json config_cancion.json mis_imagenes/ || true
           git diff --staged --quiet || git commit -m "🎬 Video: ${{ github.event.inputs.song_name }} — ${{ github.event.inputs.artist }} [$(date +'%Y-%m-%d %H:%M')]"
           git push || echo "Sin cambios"
 
