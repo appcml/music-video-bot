@@ -1,17 +1,65 @@
 {
   "song_name":   "Dust and Destiny",
-  "artist":      "CIC",
-  "song_desc":   "Country rock sobre un hombre solo en la carretera, polvo, libertad y redención",
+  "artist":      "cic",
+  "song_desc":   "[Upbeat Country-Rock]
+[Male Vocals]
+
+[Verse 1]
+I kicked the red mud off my boots
+State line's just a rusted sign in the wind
+That old engine's humming like it knows the way
+I ain't looking in the glass behind me more
+No more
+
+[Chorus]
+It's just a whole lot of dust and destiny
+Morning sun is hitting the hood just right
+I've been bent and beaten but I will not break
+Every mile is a page I am writing for myself
+Writing down (Writing down)
+
+[Verse 2]
+My knuckles are scarred from the years I've lost
+The radio only plays the songs that tell the truth
+I got a half tank and a whole lot of nothing
+And that is exactly how I like it these days
+Just how I like it
+
+[Chorus]
+It's just a whole lot of dust and destiny
+Morning sun is hitting the hood just right
+I've been bent and beaten but I will not break
+Every mile is a page I am writing for myself
+Writing down (Writing down)
+
+[Bridge]
+Let the wind take every mistake I ever made
+The long road doesn't ask me any questions
+It just rolls out there toward the edge of the world
+
+[Guitar Solo]
+
+[Chorus]
+It's just a whole lot of dust and destiny
+Morning sun is hitting the hood just right
+I've been bent and beaten but I will not break
+Every mile is a page I am writing for myself
+Writing down (Writing down)
+
+[Outro]
+Just me and the horizon
+One mile at a time
+[Guitar Fade Out]",
   "video_desc":  "",
-  "genres":      "Country,Rock",
-  "palette":     "Vintage",
-  "transition":  "Ken Burns (zoom)",
+  "genres":      "Electrónica,Balada,Country,Rock",
+  "palette":     "Oscuro",
+  "transition":  "Ken Burns",
   "text_style":  "Nombre + artista",
   "effect":      "Sin filtro",
   "rhythm":      "3",
-  "duration":    "60 seg (Reel estándar)",
+  "duration":    "Completa (Reel estándar)",
   "yt_ref":      "auto",
-  "spotify_link":"",
-  "audio_name":  "",
+  "spotify_link":"https://open.spotify.com/intl-es/track/5o6MdoAf4enPMPyn3xotUl?si=9bd84bdf502b415a",
+  "audio_name":  "SpotiDown.App - Dust and Destiny - CIC.mp3",
   "timestamp":   "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
