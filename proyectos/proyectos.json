@@ -1,1 +1,28 @@
-
+{
+  "proyectos": [
+    {
+      "id": "b5229dd87f",
+      "song_name": "Dust and Destiny",
+      "artist": "CIC",
+      "genres": "Country,Rock",
+      "palette": "Vintage",
+      "transition": "Ken Burns (zoom)",
+      "concepto": "Video cinematográfico para 'Dust and Destiny' con estética Vintage que captura la esencia country.",
+      "video_path": "output/Dust_and_Destiny_20260506_1519.mp4",
+      "fecha": "2026-05-06T15:19:38.090350",
+      "fecha_str": "06/05/2026 15:19"
+    }
+  ],
+  "ultimo": {
+    "id": "b5229dd87f",
+    "song_name": "Dust and Destiny",
+    "artist": "CIC",
+    "genres": "Country,Rock",
+    "palette": "Vintage",
+    "transition": "Ken Burns (zoom)",
+    "concepto": "Video cinematográfico para 'Dust and Destiny' con estética Vintage que captura la esencia country.",
+    "video_path": "output/Dust_and_Destiny_20260506_1519.mp4",
+    "fecha": "2026-05-06T15:19:38.090350",
+    "fecha_str": "06/05/2026 15:19"
+  }
+}

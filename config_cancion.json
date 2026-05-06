@@ -1,0 +1,17 @@
+{
+  "song_name":   "Dust and Destiny",
+  "artist":      "CIC",
+  "song_desc":   "Country rock sobre un hombre solo en la carretera, polvo, libertad y redención",
+  "video_desc":  "",
+  "genres":      "Country,Rock",
+  "palette":     "Vintage",
+  "transition":  "Ken Burns (zoom)",
+  "text_style":  "Nombre + artista",
+  "effect":      "Sin filtro",
+  "rhythm":      "3",
+  "duration":    "60 seg (Reel estándar)",
+  "yt_ref":      "auto",
+  "spotify_link":"",
+  "audio_name":  "",
+  "timestamp":   "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
