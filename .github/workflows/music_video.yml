@@ -35,14 +35,14 @@ on:
       transition:
         description: 'Transición entre imágenes'
         required: false
-        default: 'Ken Burns (zoom)'
+        default: 'Ken Burns'
         type: choice
         options:
-          - Ken Burns (zoom)
+          - Ken Burns
           - Fade suave
           - Slide horizontal
           - Slide vertical
-          - Mezcla aleatoria
+          - Mezcla
       text_style:
         description: 'Texto en pantalla'
         required: false
@@ -81,10 +81,10 @@ on:
         default: '60 seg (Reel estándar)'
         type: choice
         options:
-          - 30 seg (Reel corto)
+          - 30 seg (Reel estándar)
           - 60 seg (Reel estándar)
-          - 90 seg
-          - Duración completa
+          - 90 seg (Reel estándar)
+          - Completa (Reel estándar)
       yt_ref:
         description: 'Estilo de referencia elegido'
         required: false
