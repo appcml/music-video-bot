@@ -2,18 +2,23 @@
 # -*- coding: utf-8 -*-
 """
 ensamblador_video.py - Bot simple: Imágenes + Audio = Video
-Versión corregida para MoviePy 2.x
+Version optimizada para GitHub Actions (bajo consumo de RAM)
 """
 
 import os
 import re
 import json
 import random
-import math
 from datetime import datetime
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont, ImageEnhance
-import numpy as np
+
+# MoviePy imports con fallback para v1.x y v2.x
+try:
+    from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip, TextClip
+except ImportError:
+    from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip, TextClip
+
+from PIL import Image, ImageDraw, ImageFont
 
 # ──────────────────────────────────────────────
 # CONFIG
@@ -22,7 +27,7 @@ IMAGENES_DIR = 'mis_imagenes'
 OUTPUT_DIR = 'output'
 VIDEO_ANCHO = 1080
 VIDEO_ALTO = 1920
-VIDEO_FPS = 30
+VIDEO_FPS = 24
 
 PALETAS = {
     'oscuro': {'acento':(224,224,224),'texto':(255,255,255),'fondo':(10,10,10)},
@@ -37,67 +42,40 @@ def log(msg, tipo='info'):
     iconos = {'info':'ℹ️','ok':'✅','error':'❌','warn':'⚠️','video':'🎬','img':'🖼️','music':'🎵'}
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {iconos.get(tipo,'ℹ️')} {msg}")
 
-def escalar_9_16(img):
-    target = VIDEO_ALTO / VIDEO_ANCHO
-    ratio = img.height / img.width
-    if ratio > target:
-        nw, nh = VIDEO_ANCHO, int(VIDEO_ANCHO * ratio)
-    else:
-        nw, nh = int(VIDEO_ALTO / ratio), VIDEO_ALTO
-    img = img.resize((nw, nh), Image.LANCZOS)
-    x = (nw - VIDEO_ANCHO) // 2
-    y = (nh - VIDEO_ALTO) // 2
-    return img.crop((x, y, x + VIDEO_ANCHO, y + VIDEO_ALTO))
+def escalar_9_16(ruta_img):
+    """Procesa imagen y la guarda optimizada para video vertical"""
+    try:
+        img = Image.open(ruta_img).convert('RGB')
+        target_ratio = VIDEO_ALTO / VIDEO_ANCHO
+        ratio = img.height / img.width
+        
+        if ratio > target_ratio:
+            nw, nh = VIDEO_ANCHO, int(VIDEO_ANCHO * ratio)
+        else:
+            nw, nh = int(VIDEO_ALTO / ratio), VIDEO_ALTO
+        
+        img = img.resize((nw, nh), Image.LANCZOS)
+        x = (nw - VIDEO_ANCHO) // 2
+        y = (nh - VIDEO_ALTO) // 2
+        img = img.crop((x, y, x + VIDEO_ANCHO, y + VIDEO_ALTO))
+        
+        # Guardar temporal optimizada
+        tmp_path = f"/tmp/ensamblador_{os.path.basename(ruta_img)}"
+        img.save(tmp_path, 'JPEG', quality=85, optimize=True)
+        return tmp_path
+    except Exception as e:
+        log(f"Error procesando {ruta_img}: {e}", 'error')
+        return None
 
-def ken_burns(img, progreso, direccion='derecha'):
-    p = math.sin(progreso * math.pi / 2)
-    zoom = 1.0 + 0.08 * p
-    w, h = img.size
-    nw, nh = int(w * zoom), int(h * zoom)
-    iz = img.resize((nw, nh), Image.BILINEAR)
-    dirs = {
-        'derecha': (int((nw - w) * p), (nh - h) // 2),
-        'izquierda': (int((nw - w) * (1 - p)), (nh - h) // 2),
-        'arriba': ((nw - w) // 2, int((nh - h) * p)),
-        'abajo': ((nw - w) // 2, int((nh - h) * (1 - p)))
-    }
-    x, y = dirs.get(direccion, ((nw - w) // 2, (nh - h) // 2))
-    return iz.crop((max(0, x), max(0, y), max(0, x) + w, max(0, y) + h))
-
-def transicion_fade(i1, i2, alpha):
-    a2 = alpha * alpha * (3 - 2 * alpha)
-    if i1.size != i2.size:
-        i2 = i2.resize(i1.size, Image.BILINEAR)
-    return Image.blend(i1, i2, a2)
-
-def transicion_slide(i1, i2, alpha, direccion='izquierda'):
-    a2 = alpha * alpha * (3 - 2 * alpha)
-    w, h = i1.size
-    if i2.size != (w, h):
-        i2 = i2.resize((w, h), Image.BILINEAR)
-    resultado = Image.new('RGB', (w, h))
-    if direccion == 'izquierda':
-        offset = int(w * a2)
-        resultado.paste(i1.crop((offset, 0, w, h)), (0, 0))
-        resultado.paste(i2.crop((0, 0, w - offset, h)), (w - offset, 0))
-    elif direccion == 'derecha':
-        offset = int(w * a2)
-        resultado.paste(i1.crop((0, 0, w - offset, h)), (offset, 0))
-        resultado.paste(i2.crop((offset, 0, w, h)), (0, 0))
-    elif direccion == 'arriba':
-        offset = int(h * a2)
-        resultado.paste(i1.crop((0, offset, w, h)), (0, 0))
-        resultado.paste(i2.crop((0, 0, w, h - offset)), (0, h - offset))
-    else:  # abajo
-        offset = int(h * a2)
-        resultado.paste(i1.crop((0, 0, w, h - offset)), (0, offset))
-        resultado.paste(i2.crop((0, h - offset, w, h)), (0, 0))
-    return resultado
-
-def texto_overlay(frame, texto_principal, texto_secundario, palette_key, idx, total):
+def crear_texto_overlay(texto, subtitulo, palette_key, idx, total):
+    """Crea imagen PNG con texto para overlay"""
     pk = palette_key.lower()
     pal = PALETAS.get(pk, PALETAS['oscuro'])
-    w, h = frame.size
+    w, h = VIDEO_ANCHO, VIDEO_ALTO
+    
+    # Crear imagen transparente
+    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
     
     try:
         ft = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 64)
@@ -105,33 +83,29 @@ def texto_overlay(frame, texto_principal, texto_secundario, palette_key, idx, to
         fs = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
     except:
         ft = fa = fs = ImageFont.load_default()
-
+    
     # Gradiente oscuro abajo
-    ov = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    od = ImageDraw.Draw(ov)
-    for yo in range(400):
-        al = int(180 * (yo / 400))
-        od.line([(0, h - 400 + yo), (w, h - 400 + yo)], fill=(0, 0, 0, al))
+    for yo in range(350):
+        al = int(160 * (yo / 350))
+        draw.line([(0, h - 350 + yo), (w, h - 350 + yo)], fill=(0, 0, 0, al))
     
-    frame = frame.convert('RGBA')
-    frame = Image.alpha_composite(frame, ov).convert('RGB')
-    draw = ImageDraw.Draw(frame)
-
-    # Texto principal
-    y = h - 320
-    draw.text((50, y), texto_principal[:50], font=ft, fill=pal['texto'])
-    draw.text((50, y + 80), texto_secundario[:40], font=fa, fill=pal['acento'])
-    draw.text((w - 120, 40), f"{idx + 1}/{total}", font=fs, fill=pal['texto'])
+    # Textos
+    y = h - 300
+    draw.text((50, y), texto[:50], font=ft, fill=pal['texto'] + (255,))
+    draw.text((50, y + 80), subtitulo[:40], font=fa, fill=pal['acento'] + (255,))
+    draw.text((w - 120, 40), f"{idx + 1}/{total}", font=fs, fill=pal['texto'] + (255,))
     
-    return frame
+    tmp_path = f"/tmp/overlay_{idx}.png"
+    img.save(tmp_path, 'PNG')
+    return tmp_path
 
 def main():
     print("\n" + "=" * 60)
-    print("🎬 ENSAMBLADOR DE VIDEO - Modo Prueba")
+    print("🎬 ENSAMBLADOR DE VIDEO - Version Optimizada")
     print(f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60 + "\n")
 
-    # 1. Detectar imágenes y audio
+    # 1. Detectar archivos
     exts_img = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
     exts_audio = {'.mp3', '.wav', '.m4a', '.flac', '.aac'}
     
@@ -153,16 +127,15 @@ def main():
             log(f"🎵 Audio: {f.name}", 'music')
     
     if not imagenes:
-        log("ERROR: No hay imágenes en mis_imagenes/", 'error')
+        log("ERROR: No hay imagenes", 'error')
         return False
-    
     if not audio_path:
-        log("ERROR: No hay audio en mis_imagenes/", 'error')
+        log("ERROR: No hay audio", 'error')
         return False
     
-    log(f"Modo: RÁPIDO — {len(imagenes)} imgs + 1 audio", 'ok')
+    log(f"Listo: {len(imagenes)} imgs + 1 audio", 'ok')
     
-    # 2. Cargar config (opcional)
+    # 2. Config
     config = {}
     if os.path.exists('config_cancion.json'):
         try:
@@ -175,133 +148,124 @@ def main():
     song_name = config.get('song_name', 'Video')
     artist = config.get('artist', '')
     
-    # 3. Procesar imágenes
-    log("Procesando imágenes...", 'info')
-    imgs_pil = []
+    # 3. Procesar imagenes
+    log("Optimizando imagenes...", 'info')
+    imgs_procesadas = []
     for p in imagenes:
-        try:
-            img = Image.open(p).convert('RGB')
-            img = escalar_9_16(img)
-            imgs_pil.append(img)
-        except Exception as e:
-            log(f"Error cargando {p}: {e}", 'warn')
+        tmp = escalar_9_16(p)
+        if tmp:
+            imgs_procesadas.append(tmp)
     
-    if not imgs_pil:
-        log("No se pudieron cargar imágenes", 'error')
+    if not imgs_procesadas:
+        log("No se pudieron procesar imagenes", 'error')
         return False
     
-    log(f"Imágenes procesadas: {len(imgs_pil)}", 'ok')
+    log(f"Imagenes OK: {len(imgs_procesadas)}", 'ok')
     
-    # 4. Importar MoviePy (compatible con v1.x y v2.x)
-    log("Importando MoviePy...", 'info')
-    try:
-        from moviepy.editor import ImageSequenceClip, AudioFileClip
-        log("MoviePy v1.x detectado", 'ok')
-    except ImportError:
-        try:
-            from moviepy import ImageSequenceClip, AudioFileClip
-            log("MoviePy v2.x detectado", 'ok')
-        except ImportError as e:
-            log(f"ERROR: No se pudo importar MoviePy: {e}", 'error')
-            return False
-    
-    # 5. Calcular duración del audio
-    try:
-        audio_clip = AudioFileClip(audio_path)
-        duracion_audio = audio_clip.duration
-        audio_clip.close()
-    except Exception as e:
-        log(f"Error leyendo audio: {e}", 'error')
-        return False
-    
-    log(f"Duración audio: {duracion_audio:.1f}s", 'info')
-    
-    # Segundos por imagen
-    spi = duracion_audio / len(imgs_pil)
-    log(f"Segundos por imagen: {spi:.1f}s", 'info')
-    
-    # Frames por imagen
-    FI = int(VIDEO_FPS * spi)
-    FT = int(VIDEO_FPS * 0.6)  # Frames de transición
-    
-    # 6. Generar frames
-    log("Generando frames...", 'video')
-    
-    efectos = ['derecha', 'izquierda', 'arriba', 'abajo']
-    transiciones = ['fade', 'izquierda', 'derecha', 'arriba', 'abajo']
-    random.shuffle(efectos)
-    
-    frames = []
-    total_imgs = len(imgs_pil)
-    
-    for i in range(total_imgs):
-        img = imgs_pil[i]
-        efecto = efectos[i % len(efectos)]
-        
-        # Frames estáticos + Ken Burns
-        for f in range(FI - FT):
-            p = f / max(FI - FT - 1, 1)
-            frame = ken_burns(img, p, efecto)
-            frame = texto_overlay(frame, song_name, artist, palette, i, total_imgs)
-            frames.append(np.array(frame))
-        
-        # Frames de transición (excepto última imagen)
-        if i < total_imgs - 1:
-            next_img = imgs_pil[i + 1]
-            trans = transiciones[i % len(transiciones)]
-            for f in range(FT):
-                alpha = f / max(FT - 1, 1)
-                if trans == 'fade':
-                    frame = transicion_fade(img, next_img, alpha)
-                else:
-                    frame = transicion_slide(img, next_img, alpha, trans)
-                frame = texto_overlay(frame, song_name, artist, palette, i, total_imgs)
-                frames.append(np.array(frame))
-    
-    # Últimos frames de la última imagen
-    ultima = imgs_pil[-1]
-    for f in range(FT):
-        p = f / max(FT - 1, 1)
-        frame = ken_burns(ultima, p, efectos[-1])
-        frame = texto_overlay(frame, song_name, artist, palette, total_imgs - 1, total_imgs)
-        frames.append(np.array(frame))
-    
-    log(f"Total frames generados: {len(frames)}", 'ok')
-    
-    # 7. Ensamblar video
-    log("Ensamblando video...", 'video')
-    
-    clip = ImageSequenceClip(frames, fps=VIDEO_FPS)
-    
-    # Añadir audio
+    # 4. Cargar audio y calcular duracion
     try:
         audio = AudioFileClip(audio_path)
-        if audio.duration > clip.duration:
-            audio = audio.subclip(0, clip.duration)
-        clip = clip.set_audio(audio)
-        log("Audio añadido correctamente", 'ok')
+        duracion_total = audio.duration
+        log(f"Audio: {duracion_total:.1f}s", 'ok')
     except Exception as e:
-        log(f"Error con audio: {e}", 'warn')
+        log(f"Error audio: {e}", 'error')
+        return False
     
-    # Exportar
+    # 5. Calcular duracion por imagen
+    n_imgs = len(imgs_procesadas)
+    duracion_por_img = duracion_total / n_imgs
+    duracion_transicion = min(1.5, duracion_por_img * 0.2)  # 20% o max 1.5s
+    duracion_visible = duracion_por_img - duracion_transicion
+    
+    log(f"Cada imagen: {duracion_visible:.1f}s + transicion {duracion_transicion:.1f}s", 'info')
+    
+    # 6. Crear clips de video
+    log("Creando clips de video...", 'video')
+    
+    clips_finales = []
+    efectos = ['derecha', 'izquierda', 'arriba', 'abajo']
+    
+    for i, img_path in enumerate(imgs_procesadas):
+        efecto = efectos[i % len(efectos)]
+        
+        # Clip principal con zoom sutil (simulando Ken Burns con resize)
+        clip_img = ImageClip(img_path, duration=duracion_visible)
+        
+        # Aplicar zoom sutil
+        def make_zoom(t):
+            # Zoom del 1.0 al 1.05 durante la duracion
+            progress = t / duracion_visible if duracion_visible > 0 else 0
+            zoom = 1.0 + (0.05 * progress)
+            return zoom
+        
+        # No aplicamos zoom complejo para evitar problemas de memoria
+        # Solo usamos la imagen estatica con duracion correcta
+        
+        # Overlay de texto
+        overlay_path = crear_texto_overlay(song_name, artist, palette, i, n_imgs)
+        overlay_clip = ImageClip(overlay_path, duration=duracion_visible)
+        
+        # Componer imagen + texto
+        video_clip = CompositeVideoClip([clip_img, overlay_clip], size=(VIDEO_ANCHO, VIDEO_ALTO))
+        
+        clips_finales.append(video_clip)
+        
+        # Transicion (excepto ultima)
+        if i < n_imgs - 1:
+            next_img = imgs_procesadas[i + 1]
+            # Clip de transicion: fade out de actual, fade in de siguiente
+            trans_clip = ImageClip(next_img, duration=duracion_transicion)
+            trans_overlay = ImageClip(
+                crear_texto_overlay(song_name, artist, palette, i + 1, n_imgs),
+                duration=duracion_transicion
+            )
+            trans_composite = CompositeVideoClip([trans_clip, trans_overlay], size=(VIDEO_ANCHO, VIDEO_ALTO))
+            trans_composite = trans_composite.crossfadein(duracion_transicion)
+            
+            clips_finales.append(trans_composite)
+    
+    # 7. Concatenar todo
+    log("Concatenando clips...", 'video')
+    video_final = concatenate_videoclips(clips_finales, method="compose")
+    
+    # Ajustar duracion exacta al audio
+    if video_final.duration > duracion_total:
+        video_final = video_final.subclip(0, duracion_total)
+    
+    # Añadir audio
+    if audio.duration > video_final.duration:
+        audio = audio.subclip(0, video_final.duration)
+    video_final = video_final.set_audio(audio)
+    
+    # 8. Exportar
     Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
     nombre = re.sub(r'[^\w\s-]', '', song_name).strip().replace(' ', '_')[:40]
     out = f"{OUTPUT_DIR}/{nombre}_{datetime.now().strftime('%Y%m%d_%H%M')}.mp4"
     
-    log("Renderizando... (puede tardar varios minutos)", 'video')
+    log("Renderizando video...", 'video')
     
-    clip.write_videofile(
+    video_final.write_videofile(
         out,
+        fps=VIDEO_FPS,
         codec='libx264',
         audio_codec='aac',
         preset='ultrafast',
-        ffmpeg_params=['-crf', '28', '-profile:v', 'baseline', '-level', '3.0'],
+        ffmpeg_params=['-crf', '30', '-profile:v', 'baseline', '-level', '3.0'],
         logger=None,
         threads=4
     )
     
-    dur_real = clip.duration
-    clip.close()
+    dur_real = video_final.duration
+    video_final.close()
+    audio.close()
+    
+    # Limpiar temporales
+    for p in imgs_procesadas:
+        try:
+            if os.path.exists(p):
+                os.remove(p)
+        except:
+            pass
     
     mb = os.path.getsize(out) / (1024 * 1024)
     log(f"✅ VIDEO LISTO: {out} ({mb:.1f}MB, {dur_real:.0f}s)", 'ok')
@@ -314,7 +278,7 @@ if __name__ == "__main__":
         ok = main()
         exit(0 if ok else 1)
     except Exception as e:
-        log(f"Error crítico: {e}", 'error')
+        log(f"Error critico: {e}", 'error')
         import traceback
         traceback.print_exc()
         exit(1)
