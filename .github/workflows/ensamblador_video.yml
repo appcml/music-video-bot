@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       song_name:
-        description: 'Nombre del video / canción'
+        description: 'Nombre del video / cancion'
         required: true
         type: string
       artist:
@@ -28,7 +28,7 @@ on:
 jobs:
   generar-video:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20  # Aumentado a 20 minutos
 
     permissions:
       contents: write
@@ -46,44 +46,37 @@ jobs:
           echo "=========================================="
           ls -la mis_imagenes/ 2>/dev/null || echo "⚠️ Carpeta no encontrada"
           echo ""
-          echo "📸 IMÁGENES:"
-          find mis_imagenes/ -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" -o -name "*.webp" \) 2>/dev/null | while read f; do echo "   ✓ $(basename "$f")"; done
-          echo ""
-          echo "🎵 AUDIOS:"
-          find mis_imagenes/ -type f \( -name "*.mp3" -o -name "*.wav" -o -name "*.m4a" -o -name "*.flac" \) 2>/dev/null | while read f; do echo "   ✓ $(basename "$f")"; done
-          echo ""
           IMG_COUNT=$(find mis_imagenes/ -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" -o -name "*.webp" \) 2>/dev/null | wc -l)
           AUD_COUNT=$(find mis_imagenes/ -type f \( -name "*.mp3" -o -name "*.wav" -o -name "*.m4a" -o -name "*.flac" \) 2>/dev/null | wc -l)
-          echo "RESUMEN: $IMG_COUNT imágenes, $AUD_COUNT audios"
+          echo "📸 Imagenes: $IMG_COUNT"
+          echo "🎵 Audios: $AUD_COUNT"
           echo ""
           if [ "$IMG_COUNT" -eq 0 ]; then
-            echo "❌ ERROR: No hay imágenes en mis_imagenes/"
-            echo "   Sube tus imágenes (.jpg, .png) antes de ejecutar"
+            echo "❌ ERROR: No hay imagenes en mis_imagenes/"
             exit 1
           fi
           if [ "$AUD_COUNT" -eq 0 ]; then
             echo "❌ ERROR: No hay audio en mis_imagenes/"
-            echo "   Sube tu audio (.mp3, .wav, .m4a) antes de ejecutar"
             exit 1
           fi
-          echo "✅ Todo listo para generar el video!"
+          echo "✅ Todo listo!"
 
       - name: 🐍 Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: 📦 Instalar dependencias (MoviePy 1.x estable)
+      - name: 📦 Instalar dependencias
         run: |
           pip install --upgrade pip
-          pip install "moviepy<2.0" pillow numpy
+          pip install moviepy pillow numpy
 
       - name: 🎞️ Instalar FFmpeg y fuentes
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg fonts-dejavu-core
 
-      - name: ⚙️ Crear config_cancion.json
+      - name: ⚙️ Crear config
         env:
           SONG_NAME: ${{ github.event.inputs.song_name }}
           ARTIST: ${{ github.event.inputs.artist }}
@@ -98,23 +91,22 @@ jobs:
           }
           with open('config_cancion.json','w') as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
-          print('✅ Config creado:', json.dumps(config, ensure_ascii=False))
+          print('✅ Config:', config)
           "
 
       - name: 🎬 Generar video
         run: python ensamblador_video.py
 
-      - name: 💾 Guardar video en el repo
+      - name: 💾 Guardar en repo
         if: always()
         run: |
           git config user.name "Ensamblador Bot"
           git config user.email "bot@ensamblador.com"
-          
           git add output/ config_cancion.json
-          git diff --staged --quiet || git commit -m "🎬 Video prueba: ${{ github.event.inputs.song_name }} [$(date +'%Y-%m-%d %H:%M')]"
-          git push || echo "Sin cambios nuevos"
+          git diff --staged --quiet || git commit -m "🎬 Video: ${{ github.event.inputs.song_name }} [$(date +'%Y-%m-%d %H:%M')]"
+          git push || echo "Sin cambios"
 
-      - name: 📤 Subir video como artefacto
+      - name: 📤 Subir artefacto
         if: always()
         uses: actions/upload-artifact@v4
         with:
