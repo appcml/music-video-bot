@@ -166,20 +166,18 @@ def crear_overlay_np(song_name, artist, palette_key, idx, total):
         alpha = int(190 * (yo / grad_h) ** 1.5)
         draw.line([(0, h - grad_h + yo), (w, h - grad_h + yo)], fill=(0, 0, 0, alpha))
 
-    # Barra de acento lateral
-    r, g, b = pal['acento']
-    draw.rectangle([(48, h - 295), (8, h - 145)], fill=(r, g, b, 220))
+    # Texto overlay sin rectangulos
 
     # Nombre de canción (máx 2 líneas)
     nombre_lines = _wrap_text(song_name, 28)[:2]
     y_txt = h - 290
     for linea in nombre_lines:
-        draw.text((68, y_txt), linea, font=font_bold, fill=pal['texto'] + (255,))
+        draw.text((40, y_txt), linea, font=font_bold, fill=pal['texto'] + (255,))
         y_txt += 72
 
     # Artista
     if artist:
-        draw.text((68, y_txt + 4), artist[:38], font=font_reg, fill=pal['acento'] + (220,))
+        draw.text((40, y_txt + 4), artist[:38], font=font_reg, fill=pal['acento'] + (220,))
 
     # Contador esquina superior derecha
     draw.text((w - 115, 36), f"{idx + 1}/{total}", font=font_small, fill=pal['texto'] + (180,))
