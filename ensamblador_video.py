@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ensamblador_video.py - Bot simple: Imágenes + Audio = Video
-Versión de prueba para GitHub Actions
+Versión corregida para MoviePy 2.x
 """
 
 import os
@@ -172,7 +172,6 @@ def main():
             pass
     
     palette = config.get('palette', 'Oscuro')
-    transition = config.get('transition', 'Ken Burns').lower()
     song_name = config.get('song_name', 'Video')
     artist = config.get('artist', '')
     
@@ -193,9 +192,21 @@ def main():
     
     log(f"Imágenes procesadas: {len(imgs_pil)}", 'ok')
     
-    # 4. Calcular duración y frames
+    # 4. Importar MoviePy (compatible con v1.x y v2.x)
+    log("Importando MoviePy...", 'info')
     try:
-        from moviepy.editor import AudioFileClip
+        from moviepy.editor import ImageSequenceClip, AudioFileClip
+        log("MoviePy v1.x detectado", 'ok')
+    except ImportError:
+        try:
+            from moviepy import ImageSequenceClip, AudioFileClip
+            log("MoviePy v2.x detectado", 'ok')
+        except ImportError as e:
+            log(f"ERROR: No se pudo importar MoviePy: {e}", 'error')
+            return False
+    
+    # 5. Calcular duración del audio
+    try:
         audio_clip = AudioFileClip(audio_path)
         duracion_audio = audio_clip.duration
         audio_clip.close()
@@ -213,13 +224,11 @@ def main():
     FI = int(VIDEO_FPS * spi)
     FT = int(VIDEO_FPS * 0.6)  # Frames de transición
     
-    # 5. Generar frames
+    # 6. Generar frames
     log("Generando frames...", 'video')
     
-    # Efectos y transiciones aleatorias
     efectos = ['derecha', 'izquierda', 'arriba', 'abajo']
     transiciones = ['fade', 'izquierda', 'derecha', 'arriba', 'abajo']
-    
     random.shuffle(efectos)
     
     frames = []
@@ -259,13 +268,8 @@ def main():
     
     log(f"Total frames generados: {len(frames)}", 'ok')
     
-    # 6. Ensamblar video con MoviePy
-    log("Ensamblando video con MoviePy...", 'video')
-    
-    try:
-        from moviepy.editor import ImageSequenceClip, AudioFileClip
-    except ImportError:
-        from moviepy import ImageSequenceClip, AudioFileClip
+    # 7. Ensamblar video
+    log("Ensamblando video...", 'video')
     
     clip = ImageSequenceClip(frames, fps=VIDEO_FPS)
     
@@ -284,7 +288,7 @@ def main():
     nombre = re.sub(r'[^\w\s-]', '', song_name).strip().replace(' ', '_')[:40]
     out = f"{OUTPUT_DIR}/{nombre}_{datetime.now().strftime('%Y%m%d_%H%M')}.mp4"
     
-    log("Renderizando... (puede tardar)", 'video')
+    log("Renderizando... (puede tardar varios minutos)", 'video')
     
     clip.write_videofile(
         out,
