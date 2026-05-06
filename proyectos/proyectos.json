@@ -5,6 +5,16 @@
       "artist": "cic",
       "genres": "Electrónica,Balada,Country,Rock",
       "palette": "Luminoso",
+      "video": "output/Dust_and_Destiny_20260506_1937.mp4",
+      "modo": "rapido",
+      "fecha": "2026-05-06T19:37:42.123337",
+      "fecha_str": "06/05/2026 19:37"
+    },
+    {
+      "song_name": "Dust and Destiny",
+      "artist": "cic",
+      "genres": "Electrónica,Balada,Country,Rock",
+      "palette": "Luminoso",
       "video": "output/Dust_and_Destiny_20260506_1922.mp4",
       "modo": "rapido",
       "fecha": "2026-05-06T19:22:44.243791",
@@ -50,9 +60,9 @@
     "artist": "cic",
     "genres": "Electrónica,Balada,Country,Rock",
     "palette": "Luminoso",
-    "video": "output/Dust_and_Destiny_20260506_1922.mp4",
+    "video": "output/Dust_and_Destiny_20260506_1937.mp4",
     "modo": "rapido",
-    "fecha": "2026-05-06T19:22:44.243791",
-    "fecha_str": "06/05/2026 19:22"
+    "fecha": "2026-05-06T19:37:42.123337",
+    "fecha_str": "06/05/2026 19:37"
   }
 }
